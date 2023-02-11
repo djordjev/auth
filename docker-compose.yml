@@ -1,0 +1,11 @@
+version: "3.8"
+
+services:
+  authdb:
+    image: postgres:15-alpine3.17
+    environment:
+      POSTGRES_DB: auth_main
+      POSTGRES_USER: auth_user
+      POSTGRES_PASSWORD: testee
+    ports:
+      - "5432:5432"

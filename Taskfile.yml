@@ -1,0 +1,15 @@
+version: "3"
+
+tasks:
+  init-db:
+    cmds:
+      - docker compose exec -w /usr/pg-mig db sh init.sh
+      - docker compose exec db pg-mig run
+
+  update-db:
+    cmds:
+      - docker compose exec db pg-mig run
+
+  add-migration:
+    cmds:
+      - docker compose exec db pg-mig add -name={{.CLI_ARGS}}
