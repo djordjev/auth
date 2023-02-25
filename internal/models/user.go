@@ -15,6 +15,7 @@ type User struct {
 	Role     string  `gorm:"default:regular"`
 }
 
+//go:generate mockery --name RepositoryUser
 type RepositoryUser interface {
 	GetByEmail(email string) (user types.User, err error)
 	Create(user types.User) (newUser types.User, err error)
@@ -29,7 +30,12 @@ func (r *repositoryUser) GetByEmail(email string) (user types.User, err error) {
 	q := r.db.Session(&gorm.Session{})
 
 	dbUser := User{}
-	q.Where("email = ?", email).First(&dbUser)
+	result := q.Where("email = ?", email).First(&dbUser)
+
+	if result.Error != nil {
+		err = result.Error
+		return
+	}
 
 	user.ID = dbUser.ID
 	user.Username = *dbUser.Username

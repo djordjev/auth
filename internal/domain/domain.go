@@ -2,8 +2,11 @@ package domain
 
 import (
 	"context"
+	"errors"
 	"github.com/djordjev/auth/internal/domain/types"
 	"github.com/djordjev/auth/internal/models"
+	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 //go:generate mockery --name Domain
@@ -24,6 +27,25 @@ type domain struct {
 
 func (d *domain) SignUp(ctx context.Context, user types.User) (newUser types.User, err error) {
 	userModel := d.db.User(ctx)
+
+	_, err = userModel.GetByEmail(user.Email)
+	if err == nil {
+		err = errors.New("user already exists")
+		return
+	}
+
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return
+	}
+
+	// hash password
+	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), 14)
+	if err != nil {
+		return
+	}
+
+	user.Password = string(hash)
+
 	newUser, err = userModel.Create(user)
 	if err != nil {
 		return
