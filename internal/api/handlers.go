@@ -32,7 +32,7 @@ func (a *jsonApi) postSignup(w http.ResponseWriter, r *http.Request) {
 
 	user, err := a.domain.SignUp(r.Context(), signUpRequestToUser(req))
 	if err != nil {
-		http.Error(w, "error message", http.StatusBadRequest)
+		http.Error(w, "error message", http.StatusInternalServerError)
 		return
 	}
 

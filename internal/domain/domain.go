@@ -6,6 +6,7 @@ import (
 	"github.com/djordjev/auth/internal/models"
 )
 
+//go:generate mockery --name Domain
 type Domain interface {
 	SignUp(ctx context.Context, user types.User) (newUser types.User, err error)
 	LogIn(ctx context.Context, user types.User) (exisingUser types.User, err error)
@@ -13,7 +14,7 @@ type Domain interface {
 	Delete(ctx context.Context, user types.User) (deleted bool, err error)
 }
 
-func NewDomain(repository models.Repository) *domain {
+func NewDomain(repository models.Repository) Domain {
 	return &domain{db: repository}
 }
 
