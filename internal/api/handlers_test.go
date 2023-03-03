@@ -15,6 +15,8 @@ import (
 )
 
 func TestPostSignup(t *testing.T) {
+	t.Parallel()
+
 	ctx := context.TODO()
 
 	tests := []struct {
@@ -51,7 +53,10 @@ func TestPostSignup(t *testing.T) {
 	}
 
 	for _, test := range tests {
+		test := test
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			
 			req, err := http.NewRequestWithContext(ctx, "POST", "/signup", test.payload)
 			if err != nil {
 				require.FailNow(t, "failed to create test request")

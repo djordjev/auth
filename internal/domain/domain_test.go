@@ -12,6 +12,8 @@ import (
 )
 
 func TestSignUp(t *testing.T) {
+	t.Parallel()
+
 	ctx := context.TODO()
 
 	user := types.User{
@@ -74,7 +76,9 @@ func TestSignUp(t *testing.T) {
 	}
 
 	for _, test := range tests {
+		test := test
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 
 			mockRepository := mocks.NewRepository(t)
 			mockRepoUser := mocks.NewRepositoryUser(t)

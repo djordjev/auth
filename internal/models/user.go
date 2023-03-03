@@ -32,7 +32,9 @@ func (r *repositoryUser) GetByEmail(email string) (user types.User, err error) {
 	dbUser := User{}
 	result := q.Where("email = ?", email).First(&dbUser)
 
-	if result.Error != nil {
+	if result.Error == gorm.ErrRecordNotFound {
+		return types.User{}, NewModelError("user not found", result.Error)
+	} else if result.Error != nil {
 		err = result.Error
 		return
 	}
