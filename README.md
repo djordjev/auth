@@ -1,6 +1,9 @@
 # auth
 Simple username/password authentication service
 
+[![test](https://github.com/djordjev/auth/actions/workflows/test.yaml/badge.svg)](https://github.com/djordjev/auth/actions/workflows/test.yaml)
+
+
 ## Setup
 
 ### Tools 
