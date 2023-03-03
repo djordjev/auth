@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 	"testing"
 )
 
@@ -26,7 +27,10 @@ func newRandomUser() User {
 func TestGetByEmail(t *testing.T) {
 	// Prepare database
 	conn := getTestConnectionString()
-	db, err := gorm.Open(postgres.Open(conn), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(conn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	
 	if err != nil {
 		require.FailNow(t, "unable to acquire connection")
 		return
