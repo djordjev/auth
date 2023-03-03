@@ -1,15 +1,19 @@
 version: "3"
 
 tasks:
-  init-db:
+  build:
     cmds:
-      - docker compose exec -w /usr/pg-mig db sh init.sh
-      - docker compose exec db pg-mig run
-
-  update-db:
+      - go build -o ./build/auth ./cmd/auth/main.go
+  generate:
     cmds:
-      - docker compose exec db pg-mig run
-
-  add-migration:
+      - go generate ./...
+  test:
     cmds:
-      - docker compose exec db pg-mig add -name={{.CLI_ARGS}}
+      - go test -cover ./...
+  coverage:
+    cmds:
+      - go test -coverprofile=coverage.out ./...
+      - go tool cover -html=coverage.out
+  run_test_db:
+    cmds:
+      - docker run --name auth-test-db -p 5433:5432 -e POSTGRES_PASSWORD=testee -e POSTGRES_USER=tester -e POSTGRES_DB=testdb -d postgres:15-alpine

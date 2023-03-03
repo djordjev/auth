@@ -7,6 +7,7 @@ import (
 
 type AtomicFn = func(txRepo Repository) error
 
+//go:generate mockery --name Repository
 type Repository interface {
 	Atomic(fn AtomicFn)
 	User(ctx context.Context) RepositoryUser
