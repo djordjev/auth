@@ -1,6 +1,11 @@
 package models
 
-import "fmt"
+import (
+	"fmt"
+	"gorm.io/gorm"
+)
+
+var ErrNotFound = NewModelError("record not found", gorm.ErrRecordNotFound)
 
 type ModelError struct {
 	dbError error

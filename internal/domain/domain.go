@@ -3,10 +3,10 @@ package domain
 import (
 	"context"
 	"errors"
+	"fmt"
 	"github.com/djordjev/auth/internal/domain/types"
 	"github.com/djordjev/auth/internal/models"
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
 )
 
 //go:generate mockery --name Domain
@@ -30,17 +30,20 @@ func (d *domain) SignUp(ctx context.Context, user types.User) (newUser types.Use
 
 	_, err = userModel.GetByEmail(user.Email)
 	if err == nil {
-		err = errors.New("user already exists")
+		userMessage := fmt.Sprintf("user with email %s already exists", user.Email)
+		err = NewDomainError(userMessage, fmt.Sprintf("SignUp -> %s", userMessage), nil, false, user)
 		return
 	}
 
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
+	if !errors.Is(err, models.ErrNotFound) {
+		err = NewDomainError("", "SignUp -> error looking for the user", err, true, user)
 		return
 	}
 
 	// hash password
 	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), 14)
 	if err != nil {
+		err = NewDomainError("", "SignUp -> Unable to generate hash", err, true, user)
 		return
 	}
 
@@ -48,6 +51,7 @@ func (d *domain) SignUp(ctx context.Context, user types.User) (newUser types.Use
 
 	newUser, err = userModel.Create(user)
 	if err != nil {
+		err = NewDomainError("", "SignUp -> unable to create user", err, true, user)
 		return
 	}
 

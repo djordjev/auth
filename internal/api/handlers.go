@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"net/http"
 )
 
@@ -24,7 +23,7 @@ type SignUpResponse struct {
 func (a *jsonApi) postSignup(w http.ResponseWriter, r *http.Request) {
 	var req SignUpRequest
 
-	err := json.NewDecoder(r.Body).Decode(&req)
+	err := parseRequest(r, &req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -32,17 +31,11 @@ func (a *jsonApi) postSignup(w http.ResponseWriter, r *http.Request) {
 
 	user, err := a.domain.SignUp(r.Context(), signUpRequestToUser(req))
 	if err != nil {
-		http.Error(w, "error message", http.StatusInternalServerError)
+		respondWithError(w, err)
 		return
 	}
 
 	response := userToSignUpResponse(user)
 
-	responseBytes, err := json.Marshal(response)
-	if err != nil {
-		http.Error(w, "unable to marshal response", http.StatusInternalServerError)
-		return
-	}
-
-	w.Write(responseBytes)
+	mustWriteJSONResponse(w, response)
 }
