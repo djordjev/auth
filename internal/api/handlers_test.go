@@ -56,7 +56,7 @@ func TestPostSignup(t *testing.T) {
 		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			
+
 			req, err := http.NewRequestWithContext(ctx, "POST", "/signup", test.payload)
 			if err != nil {
 				require.FailNow(t, "failed to create test request")

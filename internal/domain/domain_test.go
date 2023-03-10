@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"github.com/djordjev/auth/internal/domain/types"
+	"github.com/djordjev/auth/internal/models"
 	"github.com/djordjev/auth/internal/models/mocks"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 	"testing"
 )
 
@@ -61,14 +61,14 @@ func TestSignUp(t *testing.T) {
 		},
 		{
 			name:                      "create user error",
-			mockGetByEmailError:       gorm.ErrRecordNotFound,
+			mockGetByEmailError:       models.ErrNotFound,
 			mockCreateUserArgUser:     &toCreateUser,
 			mockCreateUserReturnUser:  types.User{},
 			mockCreateUserReturnError: errors.New("create user error"),
 		},
 		{
 			name:                     "success",
-			mockGetByEmailError:      gorm.ErrRecordNotFound,
+			mockGetByEmailError:      models.ErrNotFound,
 			mockCreateUserArgUser:    &toCreateUser,
 			mockCreateUserReturnUser: createdUser,
 			returnUser:               createdUser,

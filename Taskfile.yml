@@ -14,6 +14,8 @@ tasks:
     cmds:
       - go test -coverprofile=coverage.out ./...
       - go tool cover -html=coverage.out
-  run_test_db:
+  test_with_db:
     cmds:
+      - docker container rm -f auth-test-db
       - docker run --name auth-test-db -p 5433:5432 -e POSTGRES_PASSWORD=testee -e POSTGRES_USER=tester -e POSTGRES_DB=testdb -d postgres:15-alpine
+      - go test -cover ./...
