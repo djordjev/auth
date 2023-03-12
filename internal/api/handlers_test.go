@@ -7,6 +7,7 @@ import (
 	"github.com/djordjev/auth/internal/domain/types"
 	"github.com/djordjev/auth/internal/utils"
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zaptest"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -72,7 +73,8 @@ func TestPostSignup(t *testing.T) {
 					Return(*test.mockSignUpReturnUser, test.mockSignUpReturnError)
 			}
 
-			api := NewApi(utils.Config{}, mux, domain)
+			logger := zaptest.NewLogger(t).Sugar()
+			api := NewApi(utils.Config{}, mux, domain, logger)
 
 			api.postSignup(rr, req)
 

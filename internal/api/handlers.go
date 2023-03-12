@@ -1,6 +1,7 @@
 package api
 
 import (
+	"github.com/djordjev/auth/internal/utils"
 	"net/http"
 )
 
@@ -32,6 +33,9 @@ func (a *jsonApi) postSignup(w http.ResponseWriter, r *http.Request) {
 	user, err := a.domain.SignUp(r.Context(), signUpRequestToUser(req))
 	if err != nil {
 		respondWithError(w, err)
+
+		logger := utils.MustGetLoggerFromRequest(r)
+		logger.Info("something else")
 		return
 	}
 
