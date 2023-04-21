@@ -30,20 +30,19 @@ func (d *domain) SignUp(ctx context.Context, user types.User) (newUser types.Use
 
 	_, err = userModel.GetByEmail(user.Email)
 	if err == nil {
-		userMessage := fmt.Sprintf("user with email %s already exists", user.Email)
-		err = NewDomainError(userMessage, fmt.Sprintf("SignUp -> %s", userMessage), nil, false, user)
+		err = ErrUserAlreadyExists
 		return
 	}
 
 	if !errors.Is(err, models.ErrNotFound) {
-		err = NewDomainError("", "SignUp -> error looking for the user", err, true, user)
+		err = fmt.Errorf("domain SignUp -> error looking for user %s: %w", user.Email, err)
 		return
 	}
 
 	// hash password
 	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), 14)
 	if err != nil {
-		err = NewDomainError("", "SignUp -> Unable to generate hash", err, true, user)
+		err = fmt.Errorf("domain SignUp -> failed to generate password hash %w", err)
 		return
 	}
 
@@ -51,7 +50,7 @@ func (d *domain) SignUp(ctx context.Context, user types.User) (newUser types.Use
 
 	newUser, err = userModel.Create(user)
 	if err != nil {
-		err = NewDomainError("", "SignUp -> unable to create user", err, true, user)
+		err = fmt.Errorf("domain SignUp -> failed to create a new user %w", err)
 		return
 	}
 

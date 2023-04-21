@@ -2,6 +2,7 @@ package models
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/djordjev/auth/internal/domain/types"
 	"gorm.io/gorm"
@@ -36,7 +37,7 @@ func (r *repositoryUser) GetByEmail(email string) (user types.User, err error) {
 		err = ErrNotFound
 		return
 	} else if result.Error != nil {
-		err = NewModelError("GetByEmail -> find user by email", result.Error)
+		err = fmt.Errorf("model GetByEmail -> find user by email %s, %w", email, result.Error)
 		return
 	}
 
@@ -59,12 +60,12 @@ func (r *repositoryUser) Create(user types.User) (newUser types.User, err error)
 
 	result := r.db.Create(&usr)
 	if result.Error != nil {
-		err = NewModelError("Create -> unable to create user", result.Error)
+		err = fmt.Errorf("model Create -> unable to create user %w", result.Error)
 		return
 	}
 
 	if result.RowsAffected != 1 {
-		err = NewModelError(fmt.Sprintf("Create -> multiple rows affected (%d)", result.RowsAffected), nil)
+		err = fmt.Errorf("model Create -> multiple rows affected %d", result.RowsAffected)
 		return
 	}
 
@@ -78,7 +79,7 @@ func (r *repositoryUser) Create(user types.User) (newUser types.User, err error)
 	newUser.Password = usr.Password
 	newUser.Role = usr.Role
 
-	return
+	return types.User{}, errors.New("some random error")
 }
 
 func newRepositoryUser(ctx context.Context, db *gorm.DB) *repositoryUser {

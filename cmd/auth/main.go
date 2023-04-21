@@ -36,7 +36,9 @@ func main() {
 	appDomain := domain.NewDomain(repo)
 
 	// Init api
-	appApi := api.NewApi(config, r, appDomain)
+	logger := utils.MustBuildLogger(config)
+
+	appApi := api.NewApi(config, r, appDomain, logger)
 
 	// Start up
 	appApi.Mount("/")

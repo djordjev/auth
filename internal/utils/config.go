@@ -13,6 +13,7 @@ type Config struct {
 	DBPort uint
 	DBUser string
 	Port   string
+	GoEnv  string
 }
 
 func BuildConfigFromEnv() (Config, error) {
@@ -23,6 +24,11 @@ func BuildConfigFromEnv() (Config, error) {
 	config.DBUser = os.Getenv("DB_USER")
 	config.DBName = os.Getenv("DB_NAME")
 	config.Port = os.Getenv("PORT")
+	config.GoEnv = os.Getenv("GO_ENV")
+
+	if config.GoEnv == "" {
+		config.GoEnv = "development"
+	}
 
 	if os.Getenv("DB_PORT") == "" {
 		// If not set default to PostgreSQL default 5432 port
@@ -52,4 +58,8 @@ func (config Config) GetConnectionString() string {
 		config.DBPort,
 		config.DBName,
 	)
+}
+
+func (config Config) IsDev() bool {
+	return config.GoEnv == "development"
 }
