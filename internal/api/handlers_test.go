@@ -7,7 +7,6 @@ import (
 	"github.com/djordjev/auth/internal/domain/types"
 	"github.com/djordjev/auth/internal/utils"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zaptest"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -18,15 +17,12 @@ import (
 func TestPostSignup(t *testing.T) {
 	t.Parallel()
 
-	ctx := context.TODO()
-
 	tests := []struct {
 		name                  string
 		payload               io.Reader
 		statusCode            int
 		mockSignUpReturnUser  *types.User
 		mockSignUpReturnError error
-		mockSignUpArgCtx      *context.Context
 		mockSignUpArgUser     *types.User
 	}{
 		{
@@ -38,7 +34,6 @@ func TestPostSignup(t *testing.T) {
 			name:                  "internal error on sign up",
 			payload:               strings.NewReader(signUpRequest),
 			statusCode:            http.StatusInternalServerError,
-			mockSignUpArgCtx:      &ctx,
 			mockSignUpArgUser:     userFromRequest(0),
 			mockSignUpReturnError: errors.New("error"),
 			mockSignUpReturnUser:  &types.User{},
@@ -48,7 +43,6 @@ func TestPostSignup(t *testing.T) {
 			payload:              strings.NewReader(signUpRequest),
 			statusCode:           http.StatusOK,
 			mockSignUpReturnUser: userFromRequest(31),
-			mockSignUpArgCtx:     &ctx,
 			mockSignUpArgUser:    userFromRequest(0),
 		},
 	}
@@ -58,7 +52,7 @@ func TestPostSignup(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			req, err := http.NewRequestWithContext(ctx, "POST", "/signup", test.payload)
+			req, err := http.NewRequestWithContext(context.TODO(), "POST", "/signup", test.payload)
 			if err != nil {
 				require.FailNow(t, "failed to create test request")
 			}
@@ -68,15 +62,16 @@ func TestPostSignup(t *testing.T) {
 
 			domain := mocks.NewDomain(t)
 
+			testLogger := utils.NewSilentLogger()
+			api := NewApi(utils.Config{}, mux, domain, testLogger)
+			reqWithLogger := utils.InjectLoggerIntoContext(req, testLogger)
+
 			if test.mockSignUpArgUser != nil {
-				domain.EXPECT().SignUp(*test.mockSignUpArgCtx, *test.mockSignUpArgUser).
+				domain.EXPECT().SignUp(reqWithLogger.Context(), *test.mockSignUpArgUser).
 					Return(*test.mockSignUpReturnUser, test.mockSignUpReturnError)
 			}
 
-			logger := zaptest.NewLogger(t).Sugar()
-			api := NewApi(utils.Config{}, mux, domain, logger)
-
-			api.postSignup(rr, req)
+			api.postSignup(rr, reqWithLogger)
 
 			require.Equal(t, rr.Code, test.statusCode)
 		})

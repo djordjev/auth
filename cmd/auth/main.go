@@ -37,7 +37,6 @@ func main() {
 
 	// Init api
 	logger := utils.MustBuildLogger(config)
-	defer logger.Sync()
 
 	appApi := api.NewApi(config, r, appDomain, logger)
 

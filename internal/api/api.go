@@ -6,7 +6,7 @@ import (
 	"github.com/djordjev/auth/internal/utils"
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
-	"go.uber.org/zap"
+	"golang.org/x/exp/slog"
 	"net/http"
 )
 
@@ -19,10 +19,10 @@ type jsonApi struct {
 	mux       *http.ServeMux
 	subrouter *chi.Mux
 	domain    domain.Domain
-	logger    *zap.SugaredLogger
+	logger    *slog.Logger
 }
 
-func NewApi(cfg utils.Config, mux *http.ServeMux, domain domain.Domain, logger *zap.SugaredLogger) *jsonApi {
+func NewApi(cfg utils.Config, mux *http.ServeMux, domain domain.Domain, logger *slog.Logger) *jsonApi {
 	router := chi.NewMux()
 
 	return &jsonApi{
@@ -38,7 +38,7 @@ func (a *jsonApi) setupMiddleware() {
 	r := a.subrouter
 
 	r.Use(middleware.Logger(a.logger))
-
+	r.Use(chimiddleware.RequestID)
 	r.Use(chimiddleware.Recoverer)
 }
 

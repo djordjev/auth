@@ -2,42 +2,44 @@ package utils
 
 import (
 	"context"
-	"go.uber.org/zap"
+	"errors"
+	"golang.org/x/exp/slog"
 	"net/http"
+	"os"
 )
 
-const LoggerKey = "__app_logger_key"
+const loggerKey = "__app_logger_key"
 
-func MustBuildLogger(config Config) *zap.SugaredLogger {
+var ErrNoLoggerInContext = errors.New("no logger in context")
+
+func MustBuildLogger(config Config) *slog.Logger {
 	if config.IsDev() {
-		logger, err := zap.NewDevelopment()
-		if err != nil {
-			panic(err)
-		}
+		handler := slog.NewTextHandler(os.Stdout)
+		logger := slog.New(handler)
 
-		return logger.Sugar().Named("dev-auth")
+		return logger.With("name", "dev-auth")
 	}
 
-	logger, err := zap.NewProduction()
-	if err != nil {
-		panic(err)
-	}
+	handler := slog.NewJSONHandler(os.Stdout)
+	logger := slog.New(handler)
 
-	return logger.Sugar().Named("auth")
+	return logger.With("name", "auth")
 }
 
-func InjectLoggerIntoContext(r *http.Request, logger *zap.SugaredLogger) *http.Request {
-	return r.WithContext(context.WithValue(r.Context(), LoggerKey, logger))
-}
+func MustGetLogger(r *http.Request) *slog.Logger {
+	logger, ok := r.Context().Value(loggerKey).(*slog.Logger)
 
-func MustGetLoggerFromRequest(r *http.Request) *zap.SugaredLogger {
-	ctx := r.Context()
-
-	logger := ctx.Value(LoggerKey).(*zap.SugaredLogger)
-
-	if logger == nil {
-		panic("no logger in context")
+	if !ok {
+		panic(ErrNoLoggerInContext)
 	}
 
 	return logger
+}
+
+func InjectLoggerIntoContext(r *http.Request, entry *slog.Logger) *http.Request {
+	return r.WithContext(context.WithValue(r.Context(), loggerKey, entry))
+}
+
+func LogError(logger *slog.Logger, err error) {
+	logger.Error(err.Error())
 }

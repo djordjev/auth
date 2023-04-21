@@ -30,7 +30,7 @@ func TestGetByEmail(t *testing.T) {
 	db, err := gorm.Open(postgres.Open(conn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
-	
+
 	if err != nil {
 		require.FailNow(t, "unable to acquire connection")
 		return
@@ -65,7 +65,7 @@ func TestGetByEmail(t *testing.T) {
 			name:      "does not exist in the database",
 			email:     fmt.Sprintf("doesnotexist+%s@gmail.com", uuid.New()),
 			result:    types.User{},
-			resultErr: gorm.ErrRecordNotFound,
+			resultErr: ErrNotFound,
 		},
 	}
 

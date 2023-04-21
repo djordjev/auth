@@ -2,9 +2,7 @@ package api
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"github.com/djordjev/auth/internal/domain"
 	"net/http"
 )
 
@@ -29,23 +27,4 @@ func mustWriteJSONResponse(w http.ResponseWriter, res any) {
 	if errWrite != nil {
 		panic(errWrite)
 	}
-}
-
-func respondWithError(w http.ResponseWriter, err error) {
-	var domainError domain.Error
-
-	if errors.As(err, &domainError) {
-		isCritical := domainError.IsCritical()
-		var statusCode int
-		if isCritical {
-			statusCode = http.StatusInternalServerError
-		} else {
-			statusCode = http.StatusBadRequest
-		}
-
-		http.Error(w, domainError.Error(), statusCode)
-		return
-	}
-
-	http.Error(w, "Internal server error", http.StatusInternalServerError)
 }
