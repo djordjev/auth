@@ -6,6 +6,7 @@ import (
 	"github.com/djordjev/auth/internal/domain/types"
 	"github.com/djordjev/auth/internal/models"
 	"github.com/djordjev/auth/internal/models/mocks"
+	"github.com/djordjev/auth/internal/utils"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"testing"
@@ -100,7 +101,7 @@ func TestSignUp(t *testing.T) {
 			mockRepository.EXPECT().User(ctx).Return(mockRepoUser)
 
 			// Test
-			domain := NewDomain(mockRepository)
+			domain := NewDomain(mockRepository, utils.Config{})
 			returnUser, _ := domain.SignUp(ctx, user)
 
 			// Assertions

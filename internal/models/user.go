@@ -2,7 +2,6 @@ package models
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/djordjev/auth/internal/domain/types"
 	"gorm.io/gorm"
@@ -14,6 +13,7 @@ type User struct {
 	Password string  `gorm:"not null"`
 	Username *string `gorm:"unique"`
 	Role     string  `gorm:"default:regular"`
+	Verified bool    `gorm:"default:false"`
 }
 
 //go:generate mockery --name RepositoryUser
@@ -79,7 +79,7 @@ func (r *repositoryUser) Create(user types.User) (newUser types.User, err error)
 	newUser.Password = usr.Password
 	newUser.Role = usr.Role
 
-	return types.User{}, errors.New("some random error")
+	return newUser, nil
 }
 
 func newRepositoryUser(ctx context.Context, db *gorm.DB) *repositoryUser {

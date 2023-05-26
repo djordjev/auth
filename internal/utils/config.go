@@ -7,13 +7,14 @@ import (
 )
 
 type Config struct {
-	DBHost string
-	DBName string
-	DBPass string
-	DBPort uint
-	DBUser string
-	Port   string
-	GoEnv  string
+	DBHost              string
+	DBName              string
+	DBPass              string
+	DBPort              uint
+	DBUser              string
+	Port                string
+	GoEnv               string
+	RequireVerification bool
 }
 
 func BuildConfigFromEnv() (Config, error) {
@@ -40,6 +41,12 @@ func BuildConfigFromEnv() (Config, error) {
 			return Config{}, err
 		}
 		config.DBPort = uint(dbPort)
+	}
+
+	if os.Getenv("REQUIRE_VERIFICATION") == "true" {
+		config.RequireVerification = true
+	} else {
+		config.RequireVerification = false
 	}
 
 	return config, nil

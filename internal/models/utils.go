@@ -7,5 +7,9 @@ func AutoMigrate(db *gorm.DB) error {
 		return err
 	}
 
+	if err := db.AutoMigrate(&VerifyAccount{}); err != nil {
+		return err
+	}
+
 	return nil
 }
