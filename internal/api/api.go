@@ -46,6 +46,7 @@ func (a *jsonApi) setupRoutes() {
 	r := a.subrouter
 
 	r.Post("/signup", a.postSignup)
+	r.Post("/login", a.postLogin)
 }
 
 func (a *jsonApi) Mount(point string) {

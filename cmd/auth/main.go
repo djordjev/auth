@@ -32,11 +32,11 @@ func main() {
 
 	repo := models.NewRepository(db)
 
-	// Init app domain
-	appDomain := domain.NewDomain(repo, config)
-
 	// Init api
 	logger := utils.MustBuildLogger(config)
+
+	// Init app domain
+	appDomain := domain.NewDomain(repo, config)
 
 	appApi := api.NewApi(config, r, appDomain, logger)
 

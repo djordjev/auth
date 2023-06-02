@@ -3,7 +3,6 @@ package models
 import (
 	"context"
 	"fmt"
-	"github.com/djordjev/auth/internal/domain/types"
 	"gorm.io/gorm"
 )
 
@@ -15,8 +14,8 @@ type VerifyAccount struct {
 }
 
 type RepositoryVerifyAccount interface {
-	Create(token string, userId uint) (verification types.VerifyAccount, err error)
-	Verify(token string) (verification types.VerifyAccount, err error)
+	Create(token string, userId uint) (verification VerifyAccount, err error)
+	Verify(token string) (verification VerifyAccount, err error)
 }
 
 type repositoryVerifyAccount struct {
@@ -24,7 +23,7 @@ type repositoryVerifyAccount struct {
 	db  *gorm.DB
 }
 
-func (v *repositoryVerifyAccount) Create(token string, userId uint) (verification types.VerifyAccount, err error) {
+func (v *repositoryVerifyAccount) Create(token string, userId uint) (verification VerifyAccount, err error) {
 	ver := VerifyAccount{
 		UserID: userId,
 		Token:  token,
@@ -43,7 +42,7 @@ func (v *repositoryVerifyAccount) Create(token string, userId uint) (verificatio
 	return
 }
 
-func (v *repositoryVerifyAccount) Verify(token string) (verification types.VerifyAccount, err error) {
+func (v *repositoryVerifyAccount) Verify(token string) (verification VerifyAccount, err error) {
 	//TODO implement me
 	panic("implement me")
 }
