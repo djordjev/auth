@@ -106,7 +106,7 @@ func (d *domain) SignUp(setup Setup, user User) (newUser User, err error) {
 	user.Password = string(hash)
 	user.Verified = !d.config.RequireVerification
 
-	d.db.Atomic(func(txRepo models.Repository) error {
+	err = d.db.Atomic(func(txRepo models.Repository) error {
 		modelUser, err := txRepo.User(setup.ctx).Create(userToModel(user))
 		newUser = modelToUser(modelUser)
 		if err != nil {

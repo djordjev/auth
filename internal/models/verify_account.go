@@ -13,6 +13,7 @@ type VerifyAccount struct {
 	Token  string `gorm:"unique,not null"`
 }
 
+//go:generate mockery --name RepositoryVerifyAccount
 type RepositoryVerifyAccount interface {
 	Create(token string, userId uint) (verification VerifyAccount, err error)
 	Verify(token string) (verification VerifyAccount, err error)
