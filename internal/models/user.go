@@ -2,9 +2,7 @@ package models
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"github.com/djordjev/auth/internal/domain/types"
 	"gorm.io/gorm"
 )
 
@@ -14,12 +12,14 @@ type User struct {
 	Password string  `gorm:"not null"`
 	Username *string `gorm:"unique"`
 	Role     string  `gorm:"default:regular"`
+	Verified bool    `gorm:"default:false"`
 }
 
 //go:generate mockery --name RepositoryUser
 type RepositoryUser interface {
-	GetByEmail(email string) (user types.User, err error)
-	Create(user types.User) (newUser types.User, err error)
+	Create(user User) (newUser User, err error)
+	GetByEmail(email string) (user User, err error)
+	GetByUsername(username string) (user User, err error)
 }
 
 type repositoryUser struct {
@@ -27,11 +27,10 @@ type repositoryUser struct {
 	db  *gorm.DB
 }
 
-func (r *repositoryUser) GetByEmail(email string) (user types.User, err error) {
+func (r *repositoryUser) GetByEmail(email string) (user User, err error) {
 	q := r.db.Session(&gorm.Session{})
 
-	dbUser := User{}
-	result := q.Where("email = ?", email).First(&dbUser)
+	result := q.Where("email = ?", email).First(&user)
 
 	if result.Error == gorm.ErrRecordNotFound {
 		err = ErrNotFound
@@ -41,24 +40,27 @@ func (r *repositoryUser) GetByEmail(email string) (user types.User, err error) {
 		return
 	}
 
-	user.ID = dbUser.ID
-	user.Username = *dbUser.Username
-	user.Password = dbUser.Password
-	user.Role = dbUser.Role
-	user.Email = dbUser.Email
+	return
+}
+
+func (r *repositoryUser) GetByUsername(username string) (user User, err error) {
+	q := r.db.Session(&gorm.Session{})
+
+	result := q.Where("username = ?", username).First(&user)
+
+	if result.Error == gorm.ErrRecordNotFound {
+		err = ErrNotFound
+		return
+	} else if result.Error != nil {
+		err = fmt.Errorf("model GetByUsername -> find user by username %s, %w", username, result.Error)
+		return
+	}
 
 	return
 }
 
-func (r *repositoryUser) Create(user types.User) (newUser types.User, err error) {
-	usr := User{
-		Email:    user.Email,
-		Password: user.Password,
-		Username: &user.Username,
-		Role:     user.Role,
-	}
-
-	result := r.db.Create(&usr)
+func (r *repositoryUser) Create(user User) (newUser User, err error) {
+	result := r.db.Create(&user)
 	if result.Error != nil {
 		err = fmt.Errorf("model Create -> unable to create user %w", result.Error)
 		return
@@ -69,17 +71,7 @@ func (r *repositoryUser) Create(user types.User) (newUser types.User, err error)
 		return
 	}
 
-	newUser.ID = usr.ID
-	newUser.Email = usr.Email
-	if usr.Username != nil {
-		newUser.Username = *usr.Username
-	} else {
-		newUser.Username = ""
-	}
-	newUser.Password = usr.Password
-	newUser.Role = usr.Role
-
-	return types.User{}, errors.New("some random error")
+	return user, nil
 }
 
 func newRepositoryUser(ctx context.Context, db *gorm.DB) *repositoryUser {

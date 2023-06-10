@@ -1,4 +1,4 @@
-package types
+package domain
 
 type User struct {
 	ID       uint
@@ -6,5 +6,11 @@ type User struct {
 	Username string
 	Password string
 	Role     string
-	Payload  map[string]any
+	Verified bool
+}
+
+type VerifyAccount struct {
+	ID     uint
+	Token  string
+	UserID uint
 }
