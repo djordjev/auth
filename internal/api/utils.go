@@ -28,3 +28,25 @@ func mustWriteJSONResponse(w http.ResponseWriter, res any) {
 		panic(errWrite)
 	}
 }
+
+type ErrorResponse struct {
+	Error string `json:"error"`
+}
+
+func respondWithError(w http.ResponseWriter, message string, status int) {
+	responseData, _ := json.Marshal(ErrorResponse{Error: message})
+
+	http.Error(w, string(responseData), status)
+}
+
+func respondWithInternalError(w http.ResponseWriter) {
+	responseData, _ := json.Marshal(ErrorResponse{Error: "internal server error"})
+
+	http.Error(w, string(responseData), http.StatusInternalServerError)
+}
+
+func respondWithBadRequest(w http.ResponseWriter) {
+	responseData, _ := json.Marshal(ErrorResponse{Error: "invalid request"})
+
+	http.Error(w, string(responseData), http.StatusBadRequest)
+}

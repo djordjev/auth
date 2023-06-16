@@ -23,11 +23,7 @@ func userToSignUpResponse(user domain.User) SignUpResponse {
 }
 
 func LogInRequestToUser(req LogInRequest) domain.User {
-	return domain.User{
-		Email:    req.Email,
-		Username: req.Username,
-		Password: req.Password,
-	}
+	return domain.User{Email: req.Email, Username: req.Username, Password: req.Password}
 }
 
 func userToLogInResponse(user domain.User) LogInResponse {
@@ -38,4 +34,12 @@ func userToLogInResponse(user domain.User) LogInResponse {
 		Email:    user.Email,
 		Verified: user.Verified,
 	}
+}
+
+func deleteRequestToUser(req DeleteAccountRequest) domain.User {
+	return domain.User{Email: req.Email, Password: req.Password, Username: req.Username}
+}
+
+func forgetPasswordToUser(req ForgetPasswordRequest) domain.User {
+	return domain.User{Email: req.Email, Username: req.Username}
 }

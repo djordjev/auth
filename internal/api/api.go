@@ -1,13 +1,14 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/djordjev/auth/internal/api/middleware"
 	"github.com/djordjev/auth/internal/domain"
 	"github.com/djordjev/auth/internal/utils"
 	"github.com/go-chi/chi/v5"
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 	"golang.org/x/exp/slog"
-	"net/http"
 )
 
 type Api interface {
@@ -47,6 +48,10 @@ func (a *jsonApi) setupRoutes() {
 
 	r.Post("/signup", a.postSignup)
 	r.Post("/login", a.postLogin)
+	r.Delete("/delete", a.deleteAccount)
+	r.Post("/verify", a.postVerifyAccount)
+	r.Post("/forget", a.postForgetPassword)
+	r.Post("/passwordreset", a.postVerifyPasswordReset)
 }
 
 func (a *jsonApi) Mount(point string) {
