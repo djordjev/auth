@@ -17,12 +17,12 @@ func userToSignUpResponse(user domain.User) SignUpResponse {
 	return SignUpResponse{
 		ID:       user.ID,
 		Username: user.Username,
-		Password: user.Password,
+		Email:    user.Email,
 		Role:     user.Role,
 	}
 }
 
-func LogInRequestToUser(req LogInRequest) domain.User {
+func logInRequestToUser(req LogInRequest) domain.User {
 	return domain.User{Email: req.Email, Username: req.Username, Password: req.Password}
 }
 

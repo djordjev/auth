@@ -16,11 +16,10 @@ type SignUpRequest struct {
 }
 
 type SignUpResponse struct {
-	ID       uint           `json:"id"`
-	Username string         `json:"username"`
-	Password string         `json:"password"`
-	Role     string         `json:"role"`
-	Payload  map[string]any `json:"payload"`
+	ID       uint   `json:"id"`
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Role     string `json:"role"`
 }
 
 func (a *jsonApi) postSignup(w http.ResponseWriter, r *http.Request) {
@@ -87,7 +86,7 @@ func (a *jsonApi) postLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	setup := domain.NewSetup(r.Context(), logger)
-	user, err := a.domain.LogIn(setup, LogInRequestToUser(req))
+	user, err := a.domain.LogIn(setup, logInRequestToUser(req))
 	if err == domain.ErrInvalidCredentials {
 		respondWithError(w, "invalid credentials", http.StatusBadRequest)
 		return
