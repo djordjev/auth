@@ -70,7 +70,14 @@ func (suite *SignUpTestSuite) TestSignUpSuccess() {
 		Role:     "admin",
 	}
 
-	suite.domainExpector.SignUp(mock.Anything, mock.Anything).Return(newUser, nil)
+	userMatcher := mock.MatchedBy(func(user domain.User) bool {
+		return user.Username == "djvukovic" &&
+			user.Password == "testee" &&
+			user.Email == "djvukovic@gmail.com" &&
+			user.Role == "admin"
+	})
+
+	suite.domainExpector.SignUp(mock.Anything, userMatcher).Return(newUser, nil)
 
 	suite.api.postSignup(suite.rr, request)
 
@@ -89,7 +96,14 @@ func (suite *SignUpTestSuite) TestSignUpSuccess() {
 func (suite *SignUpTestSuite) TestSignUpErrorUserAlreadyExists() {
 	request := suite.requestBuilder(signUpRequest)
 
-	suite.domainExpector.SignUp(mock.Anything, mock.Anything).Return(domain.User{}, domain.ErrUserAlreadyExists)
+	userMatcher := mock.MatchedBy(func(user domain.User) bool {
+		return user.Username == "djvukovic" &&
+			user.Password == "testee" &&
+			user.Email == "djvukovic@gmail.com" &&
+			user.Role == "admin"
+	})
+
+	suite.domainExpector.SignUp(mock.Anything, userMatcher).Return(domain.User{}, domain.ErrUserAlreadyExists)
 
 	suite.api.postSignup(suite.rr, request)
 
@@ -103,7 +117,14 @@ func (suite *SignUpTestSuite) TestSignUpErrorUserAlreadyExists() {
 func (suite *SignUpTestSuite) TestSignUpErrorInternal() {
 	request := suite.requestBuilder(signUpRequest)
 
-	suite.domainExpector.SignUp(mock.Anything, mock.Anything).Return(domain.User{}, errors.New("err"))
+	userMatcher := mock.MatchedBy(func(user domain.User) bool {
+		return user.Username == "djvukovic" &&
+			user.Password == "testee" &&
+			user.Email == "djvukovic@gmail.com" &&
+			user.Role == "admin"
+	})
+
+	suite.domainExpector.SignUp(mock.Anything, userMatcher).Return(domain.User{}, errors.New("err"))
 
 	suite.api.postSignup(suite.rr, request)
 
@@ -111,7 +132,7 @@ func (suite *SignUpTestSuite) TestSignUpErrorInternal() {
 	suite.Require().JSONEq(suite.rr.Body.String(), utils.ErrorJSON("internal server error"))
 }
 
-func (suite *SignUpTestSuite) TestValidationFail() {
+func (suite *SignUpTestSuite) TestSignUpValidationFail() {
 	request := suite.requestBuilder(`
 		{
 			"username": "djvukovic",
@@ -201,7 +222,7 @@ func (suite *LogInTestSuite) TestLoginSuccess() {
 	suite.Require().Equal(response.Username, user.Username)
 }
 
-func (suite *LogInTestSuite) TestInvalidCredentials() {
+func (suite *LogInTestSuite) TestLoginInvalidCredentials() {
 	suite.domainExpector.LogIn(mock.Anything, mock.Anything).Return(domain.User{}, domain.ErrInvalidCredentials)
 	request := suite.requestBuilder(logInRequest)
 
@@ -211,7 +232,7 @@ func (suite *LogInTestSuite) TestInvalidCredentials() {
 	suite.Require().JSONEq(suite.rr.Body.String(), utils.ErrorJSON("invalid credentials"))
 }
 
-func (suite *LogInTestSuite) TestOtherError() {
+func (suite *LogInTestSuite) TestLoginOtherError() {
 	suite.domainExpector.LogIn(mock.Anything, mock.Anything).Return(domain.User{}, errors.New("random"))
 	request := suite.requestBuilder(logInRequest)
 
@@ -241,7 +262,7 @@ func (suite *DeleteTestSuite) SetupTest() {
 	suite.requestBuilder = utils.RequestBuilder("DELETE", "/account")
 }
 
-func (suite *DeleteTestSuite) TestSuccess() {
+func (suite *DeleteTestSuite) TestDeleteSuccess() {
 	request := suite.requestBuilder(deleteRequest)
 	suite.domainExpector.Delete(mock.Anything, mock.Anything).Return(true, nil)
 
@@ -254,7 +275,7 @@ func (suite *DeleteTestSuite) TestSuccess() {
 
 }
 
-func (suite *DeleteTestSuite) TestValidationFailed() {
+func (suite *DeleteTestSuite) TestDeleteValidationFailed() {
 	request := suite.requestBuilder(`{"email": "something"}`)
 
 	suite.api.deleteAccount(suite.rr, request)
@@ -263,7 +284,7 @@ func (suite *DeleteTestSuite) TestValidationFailed() {
 	suite.Require().JSONEq(suite.rr.Body.String(), utils.ErrorJSON("missing password"))
 }
 
-func (suite *DeleteTestSuite) TestUserNotExist() {
+func (suite *DeleteTestSuite) TestDeleteUserNotExist() {
 	request := suite.requestBuilder(deleteRequest)
 
 	suite.domainExpector.Delete(mock.Anything, mock.Anything).Return(false, domain.ErrUserNotExist)
@@ -274,7 +295,7 @@ func (suite *DeleteTestSuite) TestUserNotExist() {
 	suite.Require().JSONEq(suite.rr.Body.String(), utils.ErrorJSON("user does not exists"))
 }
 
-func (suite *DeleteTestSuite) TestAuthenticationFailed() {
+func (suite *DeleteTestSuite) TestDeleteAuthenticationFailed() {
 	request := suite.requestBuilder(deleteRequest)
 
 	suite.domainExpector.Delete(mock.Anything, mock.Anything).Return(false, domain.ErrInvalidCredentials)
@@ -285,7 +306,7 @@ func (suite *DeleteTestSuite) TestAuthenticationFailed() {
 	suite.Require().JSONEq(suite.rr.Body.String(), utils.ErrorJSON("authentication failed"))
 }
 
-func (suite *DeleteTestSuite) TestError() {
+func (suite *DeleteTestSuite) TestDeleteError() {
 	request := suite.requestBuilder(deleteRequest)
 
 	suite.domainExpector.Delete(mock.Anything, mock.Anything).Return(false, errors.New("something"))

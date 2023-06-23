@@ -8,11 +8,11 @@ import (
 )
 
 type VerifyAccountRequest struct {
-	Token string
+	Token string `json:"token"`
 }
 
 type VerifyAccountResponse struct {
-	Verified bool
+	Verified bool `json:"verified"`
 }
 
 func (a *jsonApi) postVerifyAccount(w http.ResponseWriter, r *http.Request) {
@@ -30,6 +30,9 @@ func (a *jsonApi) postVerifyAccount(w http.ResponseWriter, r *http.Request) {
 	verified, err := a.domain.VerifyAccount(setup, req.Token)
 	if err == domain.ErrInvalidToken {
 		respondWithError(w, "invalid verification token", http.StatusBadRequest)
+		return
+	} else if err != nil {
+		respondWithInternalError(w)
 		return
 	}
 
@@ -65,6 +68,9 @@ func (a *jsonApi) postVerifyPasswordReset(w http.ResponseWriter, r *http.Request
 	user, err := a.domain.VerifyPasswordReset(setup, req.Token, req.NewPassword)
 	if err == domain.ErrInvalidToken {
 		respondWithError(w, "invalid token", http.StatusBadRequest)
+		return
+	} else if err != nil {
+		respondWithInternalError(w)
 		return
 	}
 
