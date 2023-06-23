@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/djordjev/auth/internal/models"
 	"github.com/djordjev/auth/internal/utils"
 	"github.com/google/uuid"
@@ -28,9 +29,9 @@ type Domain interface {
 	SignUp(setup Setup, user User) (newUser User, err error)
 	LogIn(setup Setup, user User) (exisingUser User, err error)
 	Delete(setup Setup, user User) (deleted bool, err error)
-	VerifyAccount(setup Setup, user User) (verified bool, err error)
+	VerifyAccount(setup Setup, token string) (verified bool, err error)
 	ResetPasswordRequest(setup Setup, user User) (sentTo User, err error)
-	VerifyPasswordReset(setup Setup, user User) (updated User, err error)
+	VerifyPasswordReset(setup Setup, token string, password string) (updated User, err error)
 }
 
 func NewDomain(repository models.Repository, config utils.Config) Domain {

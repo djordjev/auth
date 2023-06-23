@@ -232,23 +232,23 @@ func (_c *Domain_SignUp_Call) RunAndReturn(run func(domain.Setup, domain.User) (
 	return _c
 }
 
-// VerifyAccount provides a mock function with given fields: setup, user
-func (_m *Domain) VerifyAccount(setup domain.Setup, user domain.User) (bool, error) {
-	ret := _m.Called(setup, user)
+// VerifyAccount provides a mock function with given fields: setup, token
+func (_m *Domain) VerifyAccount(setup domain.Setup, token string) (bool, error) {
+	ret := _m.Called(setup, token)
 
 	var r0 bool
 	var r1 error
-	if rf, ok := ret.Get(0).(func(domain.Setup, domain.User) (bool, error)); ok {
-		return rf(setup, user)
+	if rf, ok := ret.Get(0).(func(domain.Setup, string) (bool, error)); ok {
+		return rf(setup, token)
 	}
-	if rf, ok := ret.Get(0).(func(domain.Setup, domain.User) bool); ok {
-		r0 = rf(setup, user)
+	if rf, ok := ret.Get(0).(func(domain.Setup, string) bool); ok {
+		r0 = rf(setup, token)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
-	if rf, ok := ret.Get(1).(func(domain.Setup, domain.User) error); ok {
-		r1 = rf(setup, user)
+	if rf, ok := ret.Get(1).(func(domain.Setup, string) error); ok {
+		r1 = rf(setup, token)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -263,14 +263,14 @@ type Domain_VerifyAccount_Call struct {
 
 // VerifyAccount is a helper method to define mock.On call
 //   - setup domain.Setup
-//   - user domain.User
-func (_e *Domain_Expecter) VerifyAccount(setup interface{}, user interface{}) *Domain_VerifyAccount_Call {
-	return &Domain_VerifyAccount_Call{Call: _e.mock.On("VerifyAccount", setup, user)}
+//   - token string
+func (_e *Domain_Expecter) VerifyAccount(setup interface{}, token interface{}) *Domain_VerifyAccount_Call {
+	return &Domain_VerifyAccount_Call{Call: _e.mock.On("VerifyAccount", setup, token)}
 }
 
-func (_c *Domain_VerifyAccount_Call) Run(run func(setup domain.Setup, user domain.User)) *Domain_VerifyAccount_Call {
+func (_c *Domain_VerifyAccount_Call) Run(run func(setup domain.Setup, token string)) *Domain_VerifyAccount_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(domain.Setup), args[1].(domain.User))
+		run(args[0].(domain.Setup), args[1].(string))
 	})
 	return _c
 }
@@ -280,28 +280,28 @@ func (_c *Domain_VerifyAccount_Call) Return(verified bool, err error) *Domain_Ve
 	return _c
 }
 
-func (_c *Domain_VerifyAccount_Call) RunAndReturn(run func(domain.Setup, domain.User) (bool, error)) *Domain_VerifyAccount_Call {
+func (_c *Domain_VerifyAccount_Call) RunAndReturn(run func(domain.Setup, string) (bool, error)) *Domain_VerifyAccount_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
-// VerifyPasswordReset provides a mock function with given fields: setup, user
-func (_m *Domain) VerifyPasswordReset(setup domain.Setup, user domain.User) (domain.User, error) {
-	ret := _m.Called(setup, user)
+// VerifyPasswordReset provides a mock function with given fields: setup, token, password
+func (_m *Domain) VerifyPasswordReset(setup domain.Setup, token string, password string) (domain.User, error) {
+	ret := _m.Called(setup, token, password)
 
 	var r0 domain.User
 	var r1 error
-	if rf, ok := ret.Get(0).(func(domain.Setup, domain.User) (domain.User, error)); ok {
-		return rf(setup, user)
+	if rf, ok := ret.Get(0).(func(domain.Setup, string, string) (domain.User, error)); ok {
+		return rf(setup, token, password)
 	}
-	if rf, ok := ret.Get(0).(func(domain.Setup, domain.User) domain.User); ok {
-		r0 = rf(setup, user)
+	if rf, ok := ret.Get(0).(func(domain.Setup, string, string) domain.User); ok {
+		r0 = rf(setup, token, password)
 	} else {
 		r0 = ret.Get(0).(domain.User)
 	}
 
-	if rf, ok := ret.Get(1).(func(domain.Setup, domain.User) error); ok {
-		r1 = rf(setup, user)
+	if rf, ok := ret.Get(1).(func(domain.Setup, string, string) error); ok {
+		r1 = rf(setup, token, password)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -316,14 +316,15 @@ type Domain_VerifyPasswordReset_Call struct {
 
 // VerifyPasswordReset is a helper method to define mock.On call
 //   - setup domain.Setup
-//   - user domain.User
-func (_e *Domain_Expecter) VerifyPasswordReset(setup interface{}, user interface{}) *Domain_VerifyPasswordReset_Call {
-	return &Domain_VerifyPasswordReset_Call{Call: _e.mock.On("VerifyPasswordReset", setup, user)}
+//   - token string
+//   - password string
+func (_e *Domain_Expecter) VerifyPasswordReset(setup interface{}, token interface{}, password interface{}) *Domain_VerifyPasswordReset_Call {
+	return &Domain_VerifyPasswordReset_Call{Call: _e.mock.On("VerifyPasswordReset", setup, token, password)}
 }
 
-func (_c *Domain_VerifyPasswordReset_Call) Run(run func(setup domain.Setup, user domain.User)) *Domain_VerifyPasswordReset_Call {
+func (_c *Domain_VerifyPasswordReset_Call) Run(run func(setup domain.Setup, token string, password string)) *Domain_VerifyPasswordReset_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(domain.Setup), args[1].(domain.User))
+		run(args[0].(domain.Setup), args[1].(string), args[2].(string))
 	})
 	return _c
 }
@@ -333,7 +334,7 @@ func (_c *Domain_VerifyPasswordReset_Call) Return(updated domain.User, err error
 	return _c
 }
 
-func (_c *Domain_VerifyPasswordReset_Call) RunAndReturn(run func(domain.Setup, domain.User) (domain.User, error)) *Domain_VerifyPasswordReset_Call {
+func (_c *Domain_VerifyPasswordReset_Call) RunAndReturn(run func(domain.Setup, string, string) (domain.User, error)) *Domain_VerifyPasswordReset_Call {
 	_c.Call.Return(run)
 	return _c
 }
