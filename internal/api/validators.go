@@ -1,12 +1,19 @@
 package api
 
-import "fmt"
+import (
+	"fmt"
+	"net/mail"
+)
 
 const minPasswordLength = 5
 
 func validateSignup(request SignUpRequest) error {
 	if request.Email == "" {
 		return fmt.Errorf("missing email")
+	}
+
+	if _, err := mail.ParseAddress(request.Email); err != nil {
+		return fmt.Errorf("incorrect email address")
 	}
 
 	if len(request.Password) < minPasswordLength {
