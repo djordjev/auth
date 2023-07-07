@@ -2,6 +2,7 @@ package models
 
 import (
 	"context"
+
 	"gorm.io/gorm"
 )
 
@@ -12,6 +13,7 @@ type Repository interface {
 	Atomic(fn AtomicFn) error
 	User(ctx context.Context) RepositoryUser
 	VerifyAccount(ctx context.Context) RepositoryVerifyAccount
+	ForgetPassword(ctx context.Context) RepositoryForgetPassword
 }
 
 type repository struct {
@@ -42,6 +44,10 @@ func (r *repository) User(ctx context.Context) RepositoryUser {
 
 func (r *repository) VerifyAccount(ctx context.Context) RepositoryVerifyAccount {
 	return newRepositoryVerifyAccount(ctx, r.db)
+}
+
+func (r *repository) ForgetPassword(ctx context.Context) RepositoryForgetPassword {
+	return newRepositoryForgetPassword(ctx, r.db)
 }
 
 func NewRepository(db *gorm.DB) *repository {

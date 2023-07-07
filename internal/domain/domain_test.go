@@ -3,104 +3,145 @@ package domain
 import (
 	"context"
 	"errors"
+	"testing"
+
 	"github.com/djordjev/auth/internal/models"
 	"github.com/djordjev/auth/internal/models/mocks"
 	"github.com/djordjev/auth/internal/utils"
 	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/suite"
-	"testing"
+	"github.com/stretchr/testify/require"
 )
 
-type DomainSignUpTestSuite struct {
-	suite.Suite
-	repository       *mocks.Repository
-	userRepository   *mocks.RepositoryUser
-	verifyRepository *mocks.RepositoryVerifyAccount
-	setup            Setup
-	user             User
-}
-
-func (suite *DomainSignUpTestSuite) SetupTest() {
-	suite.repository = mocks.NewRepository(suite.T())
-	suite.userRepository = mocks.NewRepositoryUser(suite.T())
-	suite.verifyRepository = mocks.NewRepositoryVerifyAccount(suite.T())
-	suite.setup = Setup{
-		ctx:    context.TODO(),
-		logger: utils.NewSilentLogger(),
+func TestSignUp(t *testing.T) {
+	type testCase struct {
+		name            string
+		user            User
+		created         models.User
+		config          utils.Config
+		setupUserRepo   func(*mocks.RepositoryUser, *testCase)
+		setupVerifyRepo func(*mocks.RepositoryVerifyAccount, *testCase)
+		setupRepo       func(*mocks.Repository, *mocks.RepositoryUser, *mocks.RepositoryVerifyAccount, *testCase)
+		returnUser      User
+		returnError     error
 	}
 
-	suite.user = User{
+	setup := Setup{ctx: context.TODO(), logger: utils.NewSilentLogger()}
+	signUpUser := User{
 		ID:       0,
 		Email:    "djvukovic@gmail.com",
 		Username: "djvukovic",
 		Password: "testee",
 		Role:     "admin",
 	}
-}
 
-func (suite *DomainSignUpTestSuite) TestCreateUserSuccess() {
-	modelUser := userToModel(suite.user)
-	modelUser.Password = "XYZ"
-	modelUser.ID = 54321
+	modelSignUpUser := userToModel(signUpUser)
+	modelSignUpUser.ID = 55
 
-	suite.repository.EXPECT().User(suite.setup.ctx).Return(suite.userRepository)
+	returnUser := signUpUser
+	returnUser.ID = 55
 
-	suite.userRepository.EXPECT().GetByEmail(suite.user.Email).Return(models.User{}, models.ErrNotFound)
-	suite.userRepository.EXPECT().Create(mock.Anything).Return(modelUser, nil)
+	tests := []testCase{
+		{
+			name: "create user returns error",
+			user: signUpUser,
+			setupUserRepo: func(ru *mocks.RepositoryUser, tc *testCase) {
+				ru.EXPECT().GetByEmail(tc.user.Email).Return(models.User{}, models.ErrNotFound)
+				ru.EXPECT().Create(mock.Anything).Return(models.User{}, errors.New("create failed"))
+			},
+			setupVerifyRepo: func(rva *mocks.RepositoryVerifyAccount, tc *testCase) {},
+			setupRepo: func(r *mocks.Repository, u *mocks.RepositoryUser, v *mocks.RepositoryVerifyAccount, tc *testCase) {
+				r.EXPECT().User(setup.ctx).Return(u)
 
-	suite.repository.EXPECT().Atomic(mock.Anything).RunAndReturn(func(f func(models.Repository) error) error {
-		f(suite.repository)
-		return nil
-	})
+				r.EXPECT().Atomic(mock.Anything).RunAndReturn(func(f func(models.Repository) error) error {
+					return f(r)
+				})
+			},
+			returnUser:  User{},
+			returnError: errors.New("create failed"),
+		},
+		{
+			name: "test user exists",
+			user: signUpUser,
+			setupUserRepo: func(ru *mocks.RepositoryUser, tc *testCase) {
+				ru.EXPECT().GetByEmail(tc.user.Email).Return(models.User{}, nil)
+			},
+			setupVerifyRepo: func(rva *mocks.RepositoryVerifyAccount, tc *testCase) {},
+			setupRepo: func(r *mocks.Repository, u *mocks.RepositoryUser, v *mocks.RepositoryVerifyAccount, tc *testCase) {
+				r.EXPECT().User(setup.ctx).Return(u)
+			},
+			returnUser:  User{},
+			returnError: ErrUserAlreadyExists,
+		},
+		{
+			name:    "success",
+			user:    signUpUser,
+			created: modelSignUpUser,
+			config:  utils.Config{RequireVerification: true},
+			setupUserRepo: func(ru *mocks.RepositoryUser, tc *testCase) {
+				ru.EXPECT().GetByEmail(tc.user.Email).Return(models.User{}, models.ErrNotFound)
+				ru.EXPECT().Create(mock.Anything).Return(tc.created, nil)
+			},
+			setupVerifyRepo: func(rva *mocks.RepositoryVerifyAccount, tc *testCase) {
+				rva.EXPECT().Create(mock.Anything, modelSignUpUser.ID).Return(models.VerifyAccount{}, nil)
+			},
+			setupRepo: func(r *mocks.Repository, u *mocks.RepositoryUser, v *mocks.RepositoryVerifyAccount, tc *testCase) {
+				r.EXPECT().User(setup.ctx).Return(u)
+				r.EXPECT().VerifyAccount(setup.ctx).Return(v)
 
-	cfg := utils.Config{RequireVerification: false}
+				r.EXPECT().Atomic(mock.Anything).RunAndReturn(func(f func(models.Repository) error) error {
+					return f(r)
+				})
+			},
+			returnUser:  returnUser,
+			returnError: nil,
+		},
+		{
+			name:    "success without verification",
+			user:    signUpUser,
+			created: modelSignUpUser,
+			config:  utils.Config{RequireVerification: false},
+			setupUserRepo: func(ru *mocks.RepositoryUser, tc *testCase) {
+				ru.EXPECT().GetByEmail(tc.user.Email).Return(models.User{}, models.ErrNotFound)
+				ru.EXPECT().Create(mock.Anything).Return(tc.created, nil)
+			},
+			setupVerifyRepo: func(rva *mocks.RepositoryVerifyAccount, tc *testCase) {},
+			setupRepo: func(r *mocks.Repository, u *mocks.RepositoryUser, v *mocks.RepositoryVerifyAccount, tc *testCase) {
+				r.EXPECT().User(setup.ctx).Return(u)
 
-	testDomain := NewDomain(suite.repository, cfg)
+				r.EXPECT().Atomic(mock.Anything).RunAndReturn(func(f func(models.Repository) error) error {
+					return f(r)
+				})
+			},
+			returnUser:  returnUser,
+			returnError: nil,
+		},
+	}
 
-	usr, err := testDomain.SignUp(suite.setup, suite.user)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create mocks
+			repository := mocks.NewRepository(t)
+			userRepository := mocks.NewRepositoryUser(t)
+			verifyRepository := mocks.NewRepositoryVerifyAccount(t)
 
-	suite.Require().Nil(err)
-	suite.Require().Equal(usr, User{
-		ID:       modelUser.ID,
-		Email:    modelUser.Email,
-		Username: *modelUser.Username,
-		Password: modelUser.Password,
-		Role:     modelUser.Role,
-		Verified: false,
-	})
+			// Setup mocks
+			tc.setupRepo(repository, userRepository, verifyRepository, &tc)
+			tc.setupUserRepo(userRepository, &tc)
+			tc.setupVerifyRepo(verifyRepository, &tc)
 
-}
+			// Run
+			domain := NewDomain(repository, tc.config)
+			usr, err := domain.SignUp(setup, tc.user)
 
-func (suite *DomainSignUpTestSuite) TestUserExists() {
-	suite.repository.EXPECT().User(suite.setup.ctx).Return(suite.userRepository)
+			// Assertions
+			if tc.returnError != nil {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
 
-	suite.userRepository.EXPECT().GetByEmail(suite.user.Email).Return(userToModel(suite.user), nil)
+			require.Equal(t, usr, tc.returnUser)
 
-	testDomain := NewDomain(suite.repository, utils.Config{})
-	usr, err := testDomain.SignUp(suite.setup, suite.user)
-
-	suite.Require().Zero(usr)
-	suite.Require().ErrorIs(err, ErrUserAlreadyExists)
-}
-
-func (suite *DomainSignUpTestSuite) TestError() {
-	returnError := errors.New("database error")
-
-	suite.repository.EXPECT().User(suite.setup.ctx).Return(suite.userRepository)
-
-	suite.userRepository.EXPECT().GetByEmail(suite.user.Email).Return(models.User{}, models.ErrNotFound)
-	suite.userRepository.EXPECT().Create(mock.Anything).Return(userToModel(suite.user), returnError)
-
-	suite.repository.EXPECT().Atomic(mock.Anything).RunAndReturn(func(f func(models.Repository) error) error {
-		return f(suite.repository)
-	})
-
-	testDomain := NewDomain(suite.repository, utils.Config{})
-	_, err := testDomain.SignUp(suite.setup, suite.user)
-
-	suite.Require().ErrorIs(err, returnError)
-}
-
-func TestDomainSignUpTestSuite(t *testing.T) {
-	suite.Run(t, new(DomainSignUpTestSuite))
+		})
+	}
 }

@@ -3,6 +3,7 @@ package models
 import (
 	"context"
 	"fmt"
+
 	"gorm.io/gorm"
 )
 
@@ -18,8 +19,11 @@ type User struct {
 //go:generate mockery --name RepositoryUser
 type RepositoryUser interface {
 	Create(user User) (newUser User, err error)
+	Delete(id uint) (success bool, err error)
 	GetByEmail(email string) (user User, err error)
 	GetByUsername(username string) (user User, err error)
+	Verify(user User) error
+	SetPassword(user User, password string) error
 }
 
 type repositoryUser struct {
@@ -72,6 +76,36 @@ func (r *repositoryUser) Create(user User) (newUser User, err error) {
 	}
 
 	return user, nil
+}
+
+func (r *repositoryUser) Delete(id uint) (success bool, err error) {
+	return true, nil
+}
+
+func (r *repositoryUser) Verify(user User) error {
+	if user.ID == 0 {
+		return fmt.Errorf("missing user ID in update function")
+	}
+
+	result := r.db.Model(&user).Updates(User{Verified: true})
+	if result.Error != nil {
+		return fmt.Errorf("failed to verify user with ID %d %w", user.ID, result.Error)
+	}
+
+	return nil
+}
+
+func (r *repositoryUser) SetPassword(user User, password string) error {
+	if user.ID == 0 {
+		return fmt.Errorf("missing user ID in update function")
+	}
+
+	result := r.db.Model(&user).Updates(User{Password: password})
+	if result.Error != nil {
+		return fmt.Errorf("failed to set password for user with ID %d %w", user.ID, result.Error)
+	}
+
+	return nil
 }
 
 func newRepositoryUser(ctx context.Context, db *gorm.DB) *repositoryUser {
