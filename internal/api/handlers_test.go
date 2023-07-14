@@ -41,6 +41,8 @@ var deleteRequest = `
 `
 
 func TestLogIn(t *testing.T) {
+	t.Parallel()
+
 	requestBuilder := utils.RequestBuilder("POST", "/login")
 
 	successUser := domain.User{
@@ -129,6 +131,8 @@ func TestLogIn(t *testing.T) {
 }
 
 func TestApiDelete(t *testing.T) {
+	t.Parallel()
+
 	requestBuilder := utils.RequestBuilder("DELETE", "/account")
 
 	type testCase struct {
@@ -210,6 +214,8 @@ func TestApiDelete(t *testing.T) {
 }
 
 func TestApiSignUp(t *testing.T) {
+	t.Parallel()
+
 	requestBuilder := utils.RequestBuilder("POST", "/signup")
 
 	newUser := domain.User{

@@ -7,6 +7,8 @@ import (
 )
 
 func TestValidateSignup(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name    string
 		request SignUpRequest
@@ -46,6 +48,8 @@ func TestValidateSignup(t *testing.T) {
 }
 
 func TestValidateLogin(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name    string
 		request LogInRequest
@@ -90,6 +94,8 @@ func TestValidateLogin(t *testing.T) {
 }
 
 func TestValidateDeleteAccount(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name    string
 		request DeleteAccountRequest
@@ -129,6 +135,8 @@ func TestValidateDeleteAccount(t *testing.T) {
 }
 
 func TestValidateForgetPassword(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name    string
 		request ForgetPasswordRequest
@@ -163,6 +171,8 @@ func TestValidateForgetPassword(t *testing.T) {
 }
 
 func TestValidateVerifyPasswordReset(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		name    string
 		request VerifyPasswordResetRequest
@@ -186,7 +196,6 @@ func TestValidateVerifyPasswordReset(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-
 			err := validateVerifyPasswordResetRequest(tc.request)
 
 			if tc.err != "" {

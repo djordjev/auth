@@ -72,23 +72,23 @@ func (_c *RepositoryForgetPassword_Create_Call) RunAndReturn(run func(uint) (mod
 	return _c
 }
 
-// ResetPassword provides a mock function with given fields: token, newPassword
-func (_m *RepositoryForgetPassword) ResetPassword(token string, newPassword string) (bool, error) {
-	ret := _m.Called(token, newPassword)
+// Delete provides a mock function with given fields: token
+func (_m *RepositoryForgetPassword) Delete(token string) (models.ForgetPassword, error) {
+	ret := _m.Called(token)
 
-	var r0 bool
+	var r0 models.ForgetPassword
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string, string) (bool, error)); ok {
-		return rf(token, newPassword)
+	if rf, ok := ret.Get(0).(func(string) (models.ForgetPassword, error)); ok {
+		return rf(token)
 	}
-	if rf, ok := ret.Get(0).(func(string, string) bool); ok {
-		r0 = rf(token, newPassword)
+	if rf, ok := ret.Get(0).(func(string) models.ForgetPassword); ok {
+		r0 = rf(token)
 	} else {
-		r0 = ret.Get(0).(bool)
+		r0 = ret.Get(0).(models.ForgetPassword)
 	}
 
-	if rf, ok := ret.Get(1).(func(string, string) error); ok {
-		r1 = rf(token, newPassword)
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(token)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -96,31 +96,30 @@ func (_m *RepositoryForgetPassword) ResetPassword(token string, newPassword stri
 	return r0, r1
 }
 
-// RepositoryForgetPassword_ResetPassword_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ResetPassword'
-type RepositoryForgetPassword_ResetPassword_Call struct {
+// RepositoryForgetPassword_Delete_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Delete'
+type RepositoryForgetPassword_Delete_Call struct {
 	*mock.Call
 }
 
-// ResetPassword is a helper method to define mock.On call
+// Delete is a helper method to define mock.On call
 //   - token string
-//   - newPassword string
-func (_e *RepositoryForgetPassword_Expecter) ResetPassword(token interface{}, newPassword interface{}) *RepositoryForgetPassword_ResetPassword_Call {
-	return &RepositoryForgetPassword_ResetPassword_Call{Call: _e.mock.On("ResetPassword", token, newPassword)}
+func (_e *RepositoryForgetPassword_Expecter) Delete(token interface{}) *RepositoryForgetPassword_Delete_Call {
+	return &RepositoryForgetPassword_Delete_Call{Call: _e.mock.On("Delete", token)}
 }
 
-func (_c *RepositoryForgetPassword_ResetPassword_Call) Run(run func(token string, newPassword string)) *RepositoryForgetPassword_ResetPassword_Call {
+func (_c *RepositoryForgetPassword_Delete_Call) Run(run func(token string)) *RepositoryForgetPassword_Delete_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(string), args[1].(string))
+		run(args[0].(string))
 	})
 	return _c
 }
 
-func (_c *RepositoryForgetPassword_ResetPassword_Call) Return(success bool, err error) *RepositoryForgetPassword_ResetPassword_Call {
-	_c.Call.Return(success, err)
+func (_c *RepositoryForgetPassword_Delete_Call) Return(request models.ForgetPassword, err error) *RepositoryForgetPassword_Delete_Call {
+	_c.Call.Return(request, err)
 	return _c
 }
 
-func (_c *RepositoryForgetPassword_ResetPassword_Call) RunAndReturn(run func(string, string) (bool, error)) *RepositoryForgetPassword_ResetPassword_Call {
+func (_c *RepositoryForgetPassword_Delete_Call) RunAndReturn(run func(string) (models.ForgetPassword, error)) *RepositoryForgetPassword_Delete_Call {
 	_c.Call.Return(run)
 	return _c
 }

@@ -116,8 +116,8 @@ func (_c *Domain_LogIn_Call) Run(run func(setup domain.Setup, user domain.User))
 	return _c
 }
 
-func (_c *Domain_LogIn_Call) Return(exisingUser domain.User, err error) *Domain_LogIn_Call {
-	_c.Call.Return(exisingUser, err)
+func (_c *Domain_LogIn_Call) Return(existing domain.User, err error) *Domain_LogIn_Call {
+	_c.Call.Return(existing, err)
 	return _c
 }
 
