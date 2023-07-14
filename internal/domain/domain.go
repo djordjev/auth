@@ -27,7 +27,7 @@ func NewSetup(ctx context.Context, logger *slog.Logger) Setup {
 //go:generate mockery --name Domain
 type Domain interface {
 	SignUp(setup Setup, user User) (newUser User, err error)
-	LogIn(setup Setup, user User) (exisingUser User, err error)
+	LogIn(setup Setup, user User) (existing User, err error)
 	Delete(setup Setup, user User) (deleted bool, err error)
 	VerifyAccount(setup Setup, token string) (verified bool, err error)
 	ResetPasswordRequest(setup Setup, user User) (sentTo User, err error)
@@ -43,7 +43,7 @@ type domain struct {
 	config utils.Config
 }
 
-func (d *domain) LogIn(setup Setup, user User) (exisingUser User, err error) {
+func (d *domain) LogIn(setup Setup, user User) (existingUser User, err error) {
 	userModel := d.db.User(setup.ctx)
 
 	var modelUser models.User
@@ -54,17 +54,14 @@ func (d *domain) LogIn(setup Setup, user User) (exisingUser User, err error) {
 	}
 
 	if err != nil {
-		err = fmt.Errorf("domain LogIn -> failed to find user with email %s and username %s, %w",
-			user.Email,
-			user.Username,
-			err)
-
+		err = ErrUserNotExist
 		return
 	}
 
-	exisingUser = modelToUser(modelUser)
-	err = bcrypt.CompareHashAndPassword([]byte(exisingUser.Password), []byte(user.Password))
+	existingUser = modelToUser(modelUser)
+	err = bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(user.Password))
 	if err != nil {
+		existingUser = User{}
 		err = ErrInvalidCredentials
 		return
 	}
@@ -74,13 +71,61 @@ func (d *domain) LogIn(setup Setup, user User) (exisingUser User, err error) {
 }
 
 func (d *domain) Delete(setup Setup, user User) (deleted bool, err error) {
-	//TODO implement me
-	panic("implement me")
+	userModel := d.db.User(setup.ctx)
+
+	var modelUser models.User
+	if user.Username != "" {
+		modelUser, err = userModel.GetByUsername(user.Username)
+	} else {
+		modelUser, err = userModel.GetByEmail(user.Email)
+	}
+
+	if err != nil {
+		err = ErrUserNotExist
+		deleted = false
+		return
+	}
+
+	existingUser := modelToUser(modelUser)
+	err = bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(user.Password))
+	if err != nil {
+		deleted = false
+		err = ErrInvalidCredentials
+		return
+	}
+
+	deleted, err = userModel.Delete(existingUser.ID)
+	return
 }
 
 func (d *domain) ResetPasswordRequest(setup Setup, user User) (sentTo User, err error) {
-	//TODO implement me
-	panic("implement me")
+	forgetPasswordModel := d.db.ForgetPassword(setup.ctx)
+	userModel := d.db.User(setup.ctx)
+
+	var existingUser models.User
+	if user.Email != "" {
+		existingUser, err = userModel.GetByEmail(user.Email)
+	} else {
+		existingUser, err = userModel.GetByUsername(user.Username)
+	}
+
+	if err == models.ErrNotFound {
+		err = ErrUserNotExist
+		return
+	} else if err != nil {
+		err = fmt.Errorf("domain ResetPasswordRequest -> failed to fetch user")
+		return
+	}
+
+	_, err = forgetPasswordModel.Create(existingUser.ID)
+
+	if err != nil {
+		return
+	}
+
+	sentTo = modelToUser(existingUser)
+
+	return
 }
 
 func (d *domain) SignUp(setup Setup, user User) (newUser User, err error) {

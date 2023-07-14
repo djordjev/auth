@@ -11,5 +11,9 @@ func AutoMigrate(db *gorm.DB) error {
 		return err
 	}
 
+	if err := db.AutoMigrate(&ForgetPassword{}); err != nil {
+		return err
+	}
+
 	return nil
 }

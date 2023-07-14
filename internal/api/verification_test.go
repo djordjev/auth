@@ -15,11 +15,11 @@ import (
 
 var logger = utils.NewSilentLogger()
 
-var verifyAccountBody = `
+func TestVerifyAccount(t *testing.T) {
+	var verifyAccountBody = `
 		{ "token": "abc" }
 	`
 
-func TestVerifyAccount(t *testing.T) {
 	tests := []struct {
 		name       string
 		request    string
@@ -76,11 +76,11 @@ func TestVerifyAccount(t *testing.T) {
 	}
 }
 
-var verifyPasswordReset = `
+func TestVerifyPasswordReset(t *testing.T) {
+	var verifyPasswordReset = `
 	{ "token": "abc", "new_password": "testee" }
 `
 
-func TestVerifyPasswordReset(t *testing.T) {
 	tests := []struct {
 		name       string
 		request    string

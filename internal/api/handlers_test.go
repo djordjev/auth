@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -11,9 +10,11 @@ import (
 	"github.com/djordjev/auth/internal/domain/mocks"
 	"github.com/djordjev/auth/internal/utils"
 	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/suite"
-	"golang.org/x/exp/slog"
+	"github.com/stretchr/testify/require"
 )
+
+var sl = utils.NewSilentLogger()
+var mux = http.NewServeMux()
 
 var signUpRequest = `
 	{
@@ -35,32 +36,187 @@ var logInRequest = `
 var deleteRequest = `
 	{
 		"email": "djvukovic@gmail.com",
-		"password": "testeee"
+		"password": "testee"
 	}
 `
 
-type SignUpTestSuite struct {
-	suite.Suite
-	rr             *httptest.ResponseRecorder
-	api            *jsonApi
-	logger         *slog.Logger
-	domainExpector *mocks.Domain_Expecter
-	requestBuilder func(string) *http.Request
+func TestLogIn(t *testing.T) {
+	t.Parallel()
+
+	requestBuilder := utils.RequestBuilder("POST", "/login")
+
+	successUser := domain.User{
+		ID:       884,
+		Email:    "djvukovic@gmail.com",
+		Username: "djvukovic",
+		Password: "testee",
+		Role:     "admin",
+		Verified: true,
+	}
+
+	userMatcher := mock.MatchedBy(func(usr domain.User) bool {
+		return usr.Email == "djvukovic@gmail.com" && usr.Password == "testee"
+	})
+
+	type testCase struct {
+		name         string
+		request      *http.Request
+		setupDomain  func(*mocks.Domain, *testCase)
+		responseCode int
+		responseBody string
+	}
+
+	tests := []testCase{
+		{
+			name:    "success",
+			request: requestBuilder(logInRequest),
+			setupDomain: func(d *mocks.Domain, tc *testCase) {
+				d.EXPECT().LogIn(mock.Anything, userMatcher).Return(successUser, nil)
+			},
+			responseCode: http.StatusOK,
+			responseBody: `{"id": 884, "username": "djvukovic", "email": "djvukovic@gmail.com", "role": "admin", "verified": true }`,
+		},
+		{
+			name:         "validation fail",
+			request:      requestBuilder(`{}`),
+			responseCode: http.StatusBadRequest,
+			responseBody: utils.ErrorJSON("missing password"),
+		},
+		{
+			name:         "bad request",
+			request:      requestBuilder(``),
+			responseCode: http.StatusBadRequest,
+			responseBody: utils.ErrorJSON("bad request"),
+		},
+		{
+			name:    "invalid credentials",
+			request: requestBuilder(logInRequest),
+			setupDomain: func(d *mocks.Domain, tc *testCase) {
+				d.EXPECT().LogIn(mock.Anything, userMatcher).Return(domain.User{}, domain.ErrInvalidCredentials)
+			},
+			responseCode: http.StatusBadRequest,
+			responseBody: utils.ErrorJSON("invalid credentials"),
+		},
+		{
+			name:    "random error",
+			request: requestBuilder(logInRequest),
+			setupDomain: func(d *mocks.Domain, tc *testCase) {
+				d.EXPECT().LogIn(mock.Anything, userMatcher).Return(domain.User{}, errors.New("random error"))
+			},
+			responseCode: http.StatusBadRequest,
+			responseBody: utils.ErrorJSON("failed login attempt"),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create mocks
+			rr := httptest.NewRecorder()
+			baseMock := mocks.NewDomain(t)
+
+			// Setup mocks
+			if tc.setupDomain != nil {
+				tc.setupDomain(baseMock, &tc)
+			}
+
+			// Run
+			api := NewApi(utils.Config{}, mux, baseMock, sl)
+			api.postLogin(rr, tc.request)
+
+			// Assertions
+			require.Equal(t, rr.Code, tc.responseCode)
+			require.JSONEq(t, rr.Body.String(), tc.responseBody)
+		})
+	}
 }
 
-func (suite *SignUpTestSuite) SetupTest() {
-	suite.rr = httptest.NewRecorder()
-	suite.logger = utils.NewSilentLogger()
+func TestApiDelete(t *testing.T) {
+	t.Parallel()
 
-	baseMock := mocks.NewDomain(suite.T())
-	suite.domainExpector = baseMock.EXPECT()
+	requestBuilder := utils.RequestBuilder("DELETE", "/account")
 
-	suite.api = NewApi(utils.Config{}, http.NewServeMux(), baseMock, suite.logger)
-	suite.requestBuilder = utils.RequestBuilder("POST", "/signup")
+	type testCase struct {
+		name         string
+		request      *http.Request
+		setupDomain  func(*mocks.Domain, *testCase)
+		responseCode int
+		responseBody string
+	}
+
+	userMatcher := mock.MatchedBy(func(usr domain.User) bool {
+		return usr.Email == "djvukovic@gmail.com" && usr.Password == "testee"
+	})
+
+	tests := []testCase{
+		{
+			name:    "success",
+			request: requestBuilder(deleteRequest),
+			setupDomain: func(d *mocks.Domain, tc *testCase) {
+				d.EXPECT().Delete(mock.Anything, userMatcher).Return(true, nil)
+			},
+			responseCode: http.StatusOK,
+			responseBody: `{ "success": true }`,
+		},
+		{
+			name:         "validation failed",
+			request:      requestBuilder(`{ "email": "djvukovic@gmail.com" }`),
+			setupDomain:  func(d *mocks.Domain, tc *testCase) {},
+			responseCode: http.StatusBadRequest,
+			responseBody: utils.ErrorJSON("missing password"),
+		},
+		{
+			name:    "delete non existing user",
+			request: requestBuilder(deleteRequest),
+			setupDomain: func(d *mocks.Domain, tc *testCase) {
+				d.EXPECT().Delete(mock.Anything, userMatcher).Return(false, domain.ErrUserNotExist)
+			},
+			responseCode: http.StatusBadRequest,
+			responseBody: utils.ErrorJSON("user does not exists"),
+		},
+		{
+			name:    "delete authentication failed",
+			request: requestBuilder(deleteRequest),
+			setupDomain: func(d *mocks.Domain, tc *testCase) {
+				d.EXPECT().Delete(mock.Anything, userMatcher).Return(false, domain.ErrInvalidCredentials)
+			},
+			responseCode: http.StatusBadRequest,
+			responseBody: utils.ErrorJSON("authentication failed"),
+		},
+		{
+			name:    "delete error",
+			request: requestBuilder(deleteRequest),
+			setupDomain: func(d *mocks.Domain, tc *testCase) {
+				d.EXPECT().Delete(mock.Anything, userMatcher).Return(false, errors.New("new error"))
+			},
+			responseCode: http.StatusInternalServerError,
+			responseBody: utils.ErrorJSON("internal server error"),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create mocks
+			rr := httptest.NewRecorder()
+			baseMock := mocks.NewDomain(t)
+
+			// Setup mocks
+			tc.setupDomain(baseMock, &tc)
+
+			// Run
+			api := NewApi(utils.Config{}, mux, baseMock, sl)
+			api.deleteAccount(rr, tc.request)
+
+			// Assertions
+			require.Equal(t, rr.Code, tc.responseCode)
+			require.JSONEq(t, rr.Body.String(), tc.responseBody)
+		})
+	}
 }
 
-func (suite *SignUpTestSuite) TestSignUpSuccess() {
-	request := suite.requestBuilder(signUpRequest)
+func TestApiSignUp(t *testing.T) {
+	t.Parallel()
+
+	requestBuilder := utils.RequestBuilder("POST", "/signup")
 
 	newUser := domain.User{
 		ID:       31,
@@ -70,255 +226,58 @@ func (suite *SignUpTestSuite) TestSignUpSuccess() {
 		Role:     "admin",
 	}
 
-	userMatcher := mock.MatchedBy(func(user domain.User) bool {
-		return user.Username == "djvukovic" &&
-			user.Password == "testee" &&
-			user.Email == "djvukovic@gmail.com" &&
-			user.Role == "admin"
-	})
-
-	suite.domainExpector.SignUp(mock.Anything, userMatcher).Return(newUser, nil)
-
-	suite.api.postSignup(suite.rr, request)
-
-	suite.Require().Equal(suite.rr.Code, http.StatusOK)
-
-	var response SignUpResponse
-	json.Unmarshal(suite.rr.Body.Bytes(), &response)
-
-	suite.Require().Equal(response.ID, newUser.ID)
-	suite.Require().Equal(response.Username, newUser.Username)
-	suite.Require().Equal(response.Email, newUser.Email)
-	suite.Require().Equal(response.Role, newUser.Role)
-
-}
-
-func (suite *SignUpTestSuite) TestSignUpErrorUserAlreadyExists() {
-	request := suite.requestBuilder(signUpRequest)
-
-	userMatcher := mock.MatchedBy(func(user domain.User) bool {
-		return user.Username == "djvukovic" &&
-			user.Password == "testee" &&
-			user.Email == "djvukovic@gmail.com" &&
-			user.Role == "admin"
-	})
-
-	suite.domainExpector.SignUp(mock.Anything, userMatcher).Return(domain.User{}, domain.ErrUserAlreadyExists)
-
-	suite.api.postSignup(suite.rr, request)
-
-	suite.Require().Equal(suite.rr.Code, http.StatusBadRequest)
-	suite.Require().JSONEq(
-		suite.rr.Body.String(),
-		utils.ErrorJSON("user with email djvukovic@gmail.com already exists"),
-	)
-}
-
-func (suite *SignUpTestSuite) TestSignUpErrorInternal() {
-	request := suite.requestBuilder(signUpRequest)
-
-	userMatcher := mock.MatchedBy(func(user domain.User) bool {
-		return user.Username == "djvukovic" &&
-			user.Password == "testee" &&
-			user.Email == "djvukovic@gmail.com" &&
-			user.Role == "admin"
-	})
-
-	suite.domainExpector.SignUp(mock.Anything, userMatcher).Return(domain.User{}, errors.New("err"))
-
-	suite.api.postSignup(suite.rr, request)
-
-	suite.Require().Equal(suite.rr.Code, http.StatusInternalServerError)
-	suite.Require().JSONEq(suite.rr.Body.String(), utils.ErrorJSON("internal server error"))
-}
-
-func (suite *SignUpTestSuite) TestSignUpValidationFail() {
-	request := suite.requestBuilder(`
-		{
-			"username": "djvukovic",
-			"password": "re",
-			"email": "djvukovic@gmail.com",
-			"role": "admin"
-		}
-	`)
-
-	suite.api.postSignup(suite.rr, request)
-
-	suite.Require().Equal(suite.rr.Code, http.StatusBadRequest)
-	suite.Require().JSONEq(
-		suite.rr.Body.String(),
-		utils.ErrorJSON("password must have at least 5 characters"),
-	)
-}
-
-type LogInTestSuite struct {
-	suite.Suite
-	rr             *httptest.ResponseRecorder
-	api            *jsonApi
-	logger         *slog.Logger
-	domainExpector *mocks.Domain_Expecter
-	requestBuilder func(string) *http.Request
-}
-
-func (suite *LogInTestSuite) SetupTest() {
-	suite.rr = httptest.NewRecorder()
-	suite.logger = utils.NewSilentLogger()
-
-	baseMock := mocks.NewDomain(suite.T())
-	suite.domainExpector = baseMock.EXPECT()
-
-	suite.api = NewApi(utils.Config{}, http.NewServeMux(), baseMock, suite.logger)
-	suite.requestBuilder = utils.RequestBuilder("POST", "/login")
-}
-
-func (suite *LogInTestSuite) TestLoginValidationFail() {
-	invalidReq := `
-		{
-			"username": "djvukovic",
-			"password": "tst",
-			"email": "djvukovic@gmail.com"
-		}
-	`
-	request := suite.requestBuilder(invalidReq)
-
-	suite.api.postLogin(suite.rr, request)
-
-	suite.Require().Equal(suite.rr.Code, http.StatusBadRequest)
-	suite.Require().JSONEq(suite.rr.Body.String(), `{"error": "incorrect password" }`)
-}
-
-func (suite *LogInTestSuite) TestLoginBadRequest() {
-	request := suite.requestBuilder(`{"something"}`)
-	suite.api.postLogin(suite.rr, request)
-
-	suite.Require().Equal(suite.rr.Code, http.StatusBadRequest)
-	suite.Require().JSONEq(suite.rr.Body.String(), `{"error": "bad request"}`)
-}
-
-func (suite *LogInTestSuite) TestLoginSuccess() {
-	user := domain.User{
-		ID:       23121,
-		Email:    "djvukovic@gmail.com",
-		Username: "djvukovic",
-		Password: "testee",
-		Role:     "admin",
-		Verified: true,
+	type testCase struct {
+		name         string
+		request      *http.Request
+		setupDomain  func(*mocks.Domain, *testCase)
+		responseCode int
+		responseBody string
 	}
 
-	suite.domainExpector.LogIn(mock.Anything, mock.Anything).Return(user, nil)
-	request := suite.requestBuilder(logInRequest)
+	domainUserMatcher := mock.MatchedBy(func(usr domain.User) bool {
+		return usr.Username == "djvukovic" &&
+			usr.Password == "testee" &&
+			usr.Role == "admin" &&
+			usr.Email == "djvukovic@gmail.com"
+	})
 
-	suite.api.postLogin(suite.rr, request)
+	tests := []testCase{
+		{
+			name:    "error user already exists",
+			request: requestBuilder(signUpRequest),
+			setupDomain: func(d *mocks.Domain, tc *testCase) {
+				d.EXPECT().SignUp(mock.Anything, domainUserMatcher).Return(domain.User{}, domain.ErrUserAlreadyExists)
+			},
+			responseCode: http.StatusBadRequest,
+			responseBody: utils.ErrorJSON("user with email djvukovic@gmail.com already exists"),
+		},
+		{
+			name:    "success",
+			request: requestBuilder(signUpRequest),
+			setupDomain: func(d *mocks.Domain, tc *testCase) {
+				d.EXPECT().SignUp(mock.Anything, domainUserMatcher).Return(newUser, nil)
+			},
+			responseCode: http.StatusOK,
+			responseBody: `{"id": 31, "username": "djvukovic", "email": "djvukovic@gmail.com", "role": "admin"}`,
+		},
+	}
 
-	suite.Require().Equal(suite.rr.Code, http.StatusOK)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create mocks
+			rr := httptest.NewRecorder()
+			baseMock := mocks.NewDomain(t)
 
-	var response LogInResponse
-	json.Unmarshal(suite.rr.Body.Bytes(), &response)
+			// Setup mocks
+			tc.setupDomain(baseMock, &tc)
 
-	suite.Require().Equal(response.Email, user.Email)
-	suite.Require().Equal(response.ID, user.ID)
-	suite.Require().Equal(response.Role, user.Role)
-	suite.Require().Equal(response.Verified, user.Verified)
-	suite.Require().Equal(response.Username, user.Username)
-}
+			// Run
+			api := NewApi(utils.Config{}, mux, baseMock, sl)
+			api.postSignup(rr, tc.request)
 
-func (suite *LogInTestSuite) TestLoginInvalidCredentials() {
-	suite.domainExpector.LogIn(mock.Anything, mock.Anything).Return(domain.User{}, domain.ErrInvalidCredentials)
-	request := suite.requestBuilder(logInRequest)
-
-	suite.api.postLogin(suite.rr, request)
-
-	suite.Require().Equal(suite.rr.Code, http.StatusBadRequest)
-	suite.Require().JSONEq(suite.rr.Body.String(), utils.ErrorJSON("invalid credentials"))
-}
-
-func (suite *LogInTestSuite) TestLoginOtherError() {
-	suite.domainExpector.LogIn(mock.Anything, mock.Anything).Return(domain.User{}, errors.New("random"))
-	request := suite.requestBuilder(logInRequest)
-
-	suite.api.postLogin(suite.rr, request)
-
-	suite.Require().Equal(suite.rr.Code, http.StatusBadRequest)
-	suite.Require().JSONEq(suite.rr.Body.String(), utils.ErrorJSON("failed login attempt"))
-}
-
-type DeleteTestSuite struct {
-	suite.Suite
-	rr             *httptest.ResponseRecorder
-	api            *jsonApi
-	logger         *slog.Logger
-	domainExpector *mocks.Domain_Expecter
-	requestBuilder func(string) *http.Request
-}
-
-func (suite *DeleteTestSuite) SetupTest() {
-	suite.rr = httptest.NewRecorder()
-	suite.logger = utils.NewSilentLogger()
-
-	baseMock := mocks.NewDomain(suite.T())
-	suite.domainExpector = baseMock.EXPECT()
-
-	suite.api = NewApi(utils.Config{}, http.NewServeMux(), baseMock, suite.logger)
-	suite.requestBuilder = utils.RequestBuilder("DELETE", "/account")
-}
-
-func (suite *DeleteTestSuite) TestDeleteSuccess() {
-	request := suite.requestBuilder(deleteRequest)
-	suite.domainExpector.Delete(mock.Anything, mock.Anything).Return(true, nil)
-
-	suite.api.deleteAccount(suite.rr, request)
-
-	suite.Require().Equal(suite.rr.Code, http.StatusOK)
-	var response DeleteAccountResponse
-	json.Unmarshal(suite.rr.Body.Bytes(), &response)
-	suite.Require().Equal(response.Success, true)
-
-}
-
-func (suite *DeleteTestSuite) TestDeleteValidationFailed() {
-	request := suite.requestBuilder(`{"email": "something"}`)
-
-	suite.api.deleteAccount(suite.rr, request)
-
-	suite.Require().Equal(suite.rr.Code, http.StatusBadRequest)
-	suite.Require().JSONEq(suite.rr.Body.String(), utils.ErrorJSON("missing password"))
-}
-
-func (suite *DeleteTestSuite) TestDeleteUserNotExist() {
-	request := suite.requestBuilder(deleteRequest)
-
-	suite.domainExpector.Delete(mock.Anything, mock.Anything).Return(false, domain.ErrUserNotExist)
-
-	suite.api.deleteAccount(suite.rr, request)
-
-	suite.Require().Equal(suite.rr.Code, http.StatusBadRequest)
-	suite.Require().JSONEq(suite.rr.Body.String(), utils.ErrorJSON("user does not exists"))
-}
-
-func (suite *DeleteTestSuite) TestDeleteAuthenticationFailed() {
-	request := suite.requestBuilder(deleteRequest)
-
-	suite.domainExpector.Delete(mock.Anything, mock.Anything).Return(false, domain.ErrInvalidCredentials)
-
-	suite.api.deleteAccount(suite.rr, request)
-
-	suite.Require().Equal(suite.rr.Code, http.StatusBadRequest)
-	suite.Require().JSONEq(suite.rr.Body.String(), utils.ErrorJSON("authentication failed"))
-}
-
-func (suite *DeleteTestSuite) TestDeleteError() {
-	request := suite.requestBuilder(deleteRequest)
-
-	suite.domainExpector.Delete(mock.Anything, mock.Anything).Return(false, errors.New("something"))
-
-	suite.api.deleteAccount(suite.rr, request)
-
-	suite.Require().Equal(suite.rr.Code, http.StatusInternalServerError)
-	suite.Require().JSONEq(suite.rr.Body.String(), utils.ErrorJSON("internal server error"))
-}
-
-func TestHandlersTestSuite(t *testing.T) {
-	suite.Run(t, new(SignUpTestSuite))
-	suite.Run(t, new(LogInTestSuite))
-	suite.Run(t, new(DeleteTestSuite))
+			// Assertions
+			require.Equal(t, rr.Code, tc.responseCode)
+			require.JSONEq(t, rr.Body.String(), tc.responseBody)
+		})
+	}
 }

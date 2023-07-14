@@ -19,12 +19,19 @@ func userToModel(user User) models.User {
 }
 
 func modelToUser(user models.User) User {
-	return User{
+	usr := User{
 		ID:       user.ID,
 		Email:    user.Email,
-		Username: *user.Username,
 		Password: user.Password,
 		Role:     user.Role,
 		Verified: user.Verified,
 	}
+
+	if user.Username != nil {
+		usr.Username = *user.Username
+	} else {
+		usr.Username = ""
+	}
+
+	return usr
 }
