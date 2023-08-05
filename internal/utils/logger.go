@@ -3,9 +3,10 @@ package utils
 import (
 	"context"
 	"errors"
-	"golang.org/x/exp/slog"
 	"net/http"
 	"os"
+
+	"golang.org/x/exp/slog"
 )
 
 const loggerKey = "__app_logger_key"
@@ -14,13 +15,13 @@ var ErrNoLoggerInContext = errors.New("no logger in context")
 
 func MustBuildLogger(config Config) *slog.Logger {
 	if config.IsDev() {
-		handler := slog.NewTextHandler(os.Stdout)
+		handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{})
 		logger := slog.New(handler)
 
 		return logger.With("name", "dev-auth")
 	}
 
-	handler := slog.NewJSONHandler(os.Stdout)
+	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{})
 	logger := slog.New(handler)
 
 	return logger.With("name", "auth")
