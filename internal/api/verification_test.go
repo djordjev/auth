@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/djordjev/auth/internal/domain"
-	"github.com/djordjev/auth/internal/domain/mocks"
 	"github.com/djordjev/auth/internal/utils"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -57,7 +56,7 @@ func TestVerifyAccount(t *testing.T) {
 
 			rr := httptest.NewRecorder()
 
-			baseExpector := mocks.NewDomain(t)
+			baseExpector := domain.NewMockDomain(t)
 			domain := baseExpector.EXPECT()
 
 			matcher := mock.MatchedBy(func(token string) bool {
@@ -136,7 +135,7 @@ func TestVerifyPasswordReset(t *testing.T) {
 			req := utils.RequestBuilder("POST", "/passwordreset")(tc.request)
 			rr := httptest.NewRecorder()
 
-			baseExpector := mocks.NewDomain(t)
+			baseExpector := domain.NewMockDomain(t)
 			domain := baseExpector.EXPECT()
 
 			tokenMatcher := mock.MatchedBy(func(token string) bool {

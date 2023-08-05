@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/djordjev/auth/internal/models"
+	modelErrors "github.com/djordjev/auth/internal/models/errors"
 	"github.com/djordjev/auth/internal/utils"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -24,7 +24,6 @@ func NewSetup(ctx context.Context, logger *slog.Logger) Setup {
 	}
 }
 
-//go:generate mockery --name Domain
 type Domain interface {
 	SignUp(setup Setup, user User) (newUser User, err error)
 	LogIn(setup Setup, user User) (existing User, err error)
@@ -34,23 +33,22 @@ type Domain interface {
 	VerifyPasswordReset(setup Setup, token string, password string) (updated User, err error)
 }
 
-func NewDomain(repository models.Repository, config utils.Config) Domain {
+func NewDomain(repository Repository, config utils.Config) Domain {
 	return &domain{db: repository, config: config}
 }
 
 type domain struct {
-	db     models.Repository
+	db     Repository
 	config utils.Config
 }
 
 func (d *domain) LogIn(setup Setup, user User) (existingUser User, err error) {
 	userModel := d.db.User(setup.ctx)
 
-	var modelUser models.User
 	if user.Username != "" {
-		modelUser, err = userModel.GetByUsername(user.Username)
+		existingUser, err = userModel.GetByUsername(user.Username)
 	} else {
-		modelUser, err = userModel.GetByEmail(user.Email)
+		existingUser, err = userModel.GetByEmail(user.Email)
 	}
 
 	if err != nil {
@@ -58,7 +56,6 @@ func (d *domain) LogIn(setup Setup, user User) (existingUser User, err error) {
 		return
 	}
 
-	existingUser = modelToUser(modelUser)
 	err = bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(user.Password))
 	if err != nil {
 		existingUser = User{}
@@ -73,11 +70,11 @@ func (d *domain) LogIn(setup Setup, user User) (existingUser User, err error) {
 func (d *domain) Delete(setup Setup, user User) (deleted bool, err error) {
 	userModel := d.db.User(setup.ctx)
 
-	var modelUser models.User
+	var existingUser User
 	if user.Username != "" {
-		modelUser, err = userModel.GetByUsername(user.Username)
+		existingUser, err = userModel.GetByUsername(user.Username)
 	} else {
-		modelUser, err = userModel.GetByEmail(user.Email)
+		existingUser, err = userModel.GetByEmail(user.Email)
 	}
 
 	if err != nil {
@@ -86,7 +83,6 @@ func (d *domain) Delete(setup Setup, user User) (deleted bool, err error) {
 		return
 	}
 
-	existingUser := modelToUser(modelUser)
 	err = bcrypt.CompareHashAndPassword([]byte(existingUser.Password), []byte(user.Password))
 	if err != nil {
 		deleted = false
@@ -102,14 +98,13 @@ func (d *domain) ResetPasswordRequest(setup Setup, user User) (sentTo User, err 
 	forgetPasswordModel := d.db.ForgetPassword(setup.ctx)
 	userModel := d.db.User(setup.ctx)
 
-	var existingUser models.User
 	if user.Email != "" {
-		existingUser, err = userModel.GetByEmail(user.Email)
+		sentTo, err = userModel.GetByEmail(user.Email)
 	} else {
-		existingUser, err = userModel.GetByUsername(user.Username)
+		sentTo, err = userModel.GetByUsername(user.Username)
 	}
 
-	if err == models.ErrNotFound {
+	if err == modelErrors.ErrNotFound {
 		err = ErrUserNotExist
 		return
 	} else if err != nil {
@@ -117,13 +112,12 @@ func (d *domain) ResetPasswordRequest(setup Setup, user User) (sentTo User, err 
 		return
 	}
 
-	_, err = forgetPasswordModel.Create(existingUser.ID)
+	_, err = forgetPasswordModel.Create(sentTo.ID)
 
 	if err != nil {
+		sentTo = User{}
 		return
 	}
-
-	sentTo = modelToUser(existingUser)
 
 	return
 }
@@ -137,7 +131,7 @@ func (d *domain) SignUp(setup Setup, user User) (newUser User, err error) {
 		return
 	}
 
-	if !errors.Is(err, models.ErrNotFound) {
+	if !errors.Is(err, modelErrors.ErrNotFound) {
 		err = fmt.Errorf("domain SignUp -> error looking for user %s: %w", user.Email, err)
 		return
 	}
@@ -152,13 +146,14 @@ func (d *domain) SignUp(setup Setup, user User) (newUser User, err error) {
 	user.Password = string(hash)
 	user.Verified = !d.config.RequireVerification
 
-	err = d.db.Atomic(func(txRepo models.Repository) error {
-		modelUser, err := txRepo.User(setup.ctx).Create(userToModel(user))
-		newUser = modelToUser(modelUser)
+	err = d.db.Atomic(func(txRepo Repository) error {
+		newUserCopy, err := txRepo.User(setup.ctx).Create(user)
 		if err != nil {
 			err = fmt.Errorf("domain SignUp -> failed to create a new user %w", err)
 			return err
 		}
+
+		newUser = newUserCopy
 
 		if !d.config.RequireVerification {
 			return nil
@@ -169,11 +164,12 @@ func (d *domain) SignUp(setup Setup, user User) (newUser User, err error) {
 			return e
 		}
 
-		_, e = txRepo.VerifyAccount(setup.ctx).Create(token.String(), newUser.ID)
+		_, e = txRepo.VerifyAccount(setup.ctx).Create(token.String(), newUserCopy.ID)
 		if e != nil {
 			return e
 		}
 
+		newUser = newUserCopy
 		return nil
 	})
 

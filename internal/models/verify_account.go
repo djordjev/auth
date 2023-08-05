@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/djordjev/auth/internal/domain"
 	"gorm.io/gorm"
 )
 
@@ -14,18 +15,12 @@ type VerifyAccount struct {
 	Token  string `gorm:"unique,not null"`
 }
 
-//go:generate mockery --name RepositoryVerifyAccount
-type RepositoryVerifyAccount interface {
-	Create(token string, userId uint) (verification VerifyAccount, err error)
-	Verify(token string) (verification VerifyAccount, err error)
-}
-
 type repositoryVerifyAccount struct {
 	ctx context.Context
 	db  *gorm.DB
 }
 
-func (v *repositoryVerifyAccount) Create(token string, userId uint) (verification VerifyAccount, err error) {
+func (v *repositoryVerifyAccount) Create(token string, userId uint) (verification domain.VerifyAccount, err error) {
 	ver := VerifyAccount{
 		UserID: userId,
 		Token:  token,
@@ -44,11 +39,11 @@ func (v *repositoryVerifyAccount) Create(token string, userId uint) (verificatio
 	return
 }
 
-func (v *repositoryVerifyAccount) Verify(token string) (verification VerifyAccount, err error) {
+func (v *repositoryVerifyAccount) Verify(token string) (verification domain.VerifyAccount, err error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func newRepositoryVerifyAccount(ctx context.Context, db *gorm.DB) RepositoryVerifyAccount {
+func newRepositoryVerifyAccount(ctx context.Context, db *gorm.DB) *repositoryVerifyAccount {
 	return &repositoryVerifyAccount{ctx: ctx, db: db}
 }

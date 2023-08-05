@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/djordjev/auth/internal/domain"
+	modelErrors "github.com/djordjev/auth/internal/models/errors"
+
 	"gorm.io/gorm"
 )
 
@@ -16,28 +19,18 @@ type User struct {
 	Verified bool    `gorm:"default:false"`
 }
 
-//go:generate mockery --name RepositoryUser
-type RepositoryUser interface {
-	Create(user User) (newUser User, err error)
-	Delete(id uint) (success bool, err error)
-	GetByEmail(email string) (user User, err error)
-	GetByUsername(username string) (user User, err error)
-	Verify(user User) error
-	SetPassword(user User, password string) error
-}
-
 type repositoryUser struct {
 	ctx context.Context
 	db  *gorm.DB
 }
 
-func (r *repositoryUser) GetByEmail(email string) (user User, err error) {
+func (r *repositoryUser) GetByEmail(email string) (user domain.User, err error) {
 	q := r.db.Session(&gorm.Session{})
 
 	result := q.Where("email = ?", email).First(&user)
 
 	if result.Error == gorm.ErrRecordNotFound {
-		err = ErrNotFound
+		err = modelErrors.ErrNotFound
 		return
 	} else if result.Error != nil {
 		err = fmt.Errorf("model GetByEmail -> find user by email %s, %w", email, result.Error)
@@ -47,13 +40,13 @@ func (r *repositoryUser) GetByEmail(email string) (user User, err error) {
 	return
 }
 
-func (r *repositoryUser) GetByUsername(username string) (user User, err error) {
+func (r *repositoryUser) GetByUsername(username string) (user domain.User, err error) {
 	q := r.db.Session(&gorm.Session{})
 
 	result := q.Where("username = ?", username).First(&user)
 
 	if result.Error == gorm.ErrRecordNotFound {
-		err = ErrNotFound
+		err = modelErrors.ErrNotFound
 		return
 	} else if result.Error != nil {
 		err = fmt.Errorf("model GetByUsername -> find user by username %s, %w", username, result.Error)
@@ -63,7 +56,7 @@ func (r *repositoryUser) GetByUsername(username string) (user User, err error) {
 	return
 }
 
-func (r *repositoryUser) Create(user User) (newUser User, err error) {
+func (r *repositoryUser) Create(user domain.User) (newUser domain.User, err error) {
 	result := r.db.Create(&user)
 	if result.Error != nil {
 		err = fmt.Errorf("model Create -> unable to create user %w", result.Error)
@@ -82,7 +75,7 @@ func (r *repositoryUser) Delete(id uint) (success bool, err error) {
 	return true, nil
 }
 
-func (r *repositoryUser) Verify(user User) error {
+func (r *repositoryUser) Verify(user domain.User) error {
 	if user.ID == 0 {
 		return fmt.Errorf("missing user ID in update function")
 	}
@@ -95,7 +88,7 @@ func (r *repositoryUser) Verify(user User) error {
 	return nil
 }
 
-func (r *repositoryUser) SetPassword(user User, password string) error {
+func (r *repositoryUser) SetPassword(user domain.User, password string) error {
 	if user.ID == 0 {
 		return fmt.Errorf("missing user ID in update function")
 	}

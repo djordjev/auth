@@ -2,25 +2,16 @@ package models
 
 import (
 	"context"
+	"github.com/djordjev/auth/internal/domain"
 
 	"gorm.io/gorm"
 )
-
-type AtomicFn = func(txRepo Repository) error
-
-//go:generate mockery --name Repository
-type Repository interface {
-	Atomic(fn AtomicFn) error
-	User(ctx context.Context) RepositoryUser
-	VerifyAccount(ctx context.Context) RepositoryVerifyAccount
-	ForgetPassword(ctx context.Context) RepositoryForgetPassword
-}
 
 type repository struct {
 	db *gorm.DB
 }
 
-func (r *repository) Atomic(fn AtomicFn) (err error) {
+func (r *repository) Atomic(fn domain.AtomicFn) (err error) {
 	tx := r.db.Begin()
 
 	newRepo := NewRepository(tx)
@@ -38,15 +29,15 @@ func (r *repository) Atomic(fn AtomicFn) (err error) {
 	return
 }
 
-func (r *repository) User(ctx context.Context) RepositoryUser {
+func (r *repository) User(ctx context.Context) domain.RepositoryUser {
 	return newRepositoryUser(ctx, r.db)
 }
 
-func (r *repository) VerifyAccount(ctx context.Context) RepositoryVerifyAccount {
+func (r *repository) VerifyAccount(ctx context.Context) domain.RepositoryVerifyAccount {
 	return newRepositoryVerifyAccount(ctx, r.db)
 }
 
-func (r *repository) ForgetPassword(ctx context.Context) RepositoryForgetPassword {
+func (r *repository) ForgetPassword(ctx context.Context) domain.RepositoryForgetPassword {
 	return newRepositoryForgetPassword(ctx, r.db)
 }
 
