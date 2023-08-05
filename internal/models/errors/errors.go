@@ -1,7 +1,5 @@
-package models
+package errors
 
-import (
-	"errors"
-)
+import "errors"
 
 var ErrNotFound = errors.New("not found in db")

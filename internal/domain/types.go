@@ -14,3 +14,9 @@ type VerifyAccount struct {
 	Token  string
 	UserID uint
 }
+
+type ForgetPassword struct {
+	ID     uint
+	Token  string
+	UserID uint
+}
