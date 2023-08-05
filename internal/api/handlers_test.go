@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/djordjev/auth/internal/domain"
-	"github.com/djordjev/auth/internal/domain/mocks"
 	"github.com/djordjev/auth/internal/utils"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -61,7 +60,7 @@ func TestLogIn(t *testing.T) {
 	type testCase struct {
 		name         string
 		request      *http.Request
-		setupDomain  func(*mocks.Domain, *testCase)
+		setupDomain  func(*domain.MockDomain, *testCase)
 		responseCode int
 		responseBody string
 	}
@@ -70,7 +69,7 @@ func TestLogIn(t *testing.T) {
 		{
 			name:    "success",
 			request: requestBuilder(logInRequest),
-			setupDomain: func(d *mocks.Domain, tc *testCase) {
+			setupDomain: func(d *domain.MockDomain, tc *testCase) {
 				d.EXPECT().LogIn(mock.Anything, userMatcher).Return(successUser, nil)
 			},
 			responseCode: http.StatusOK,
@@ -91,7 +90,7 @@ func TestLogIn(t *testing.T) {
 		{
 			name:    "invalid credentials",
 			request: requestBuilder(logInRequest),
-			setupDomain: func(d *mocks.Domain, tc *testCase) {
+			setupDomain: func(d *domain.MockDomain, tc *testCase) {
 				d.EXPECT().LogIn(mock.Anything, userMatcher).Return(domain.User{}, domain.ErrInvalidCredentials)
 			},
 			responseCode: http.StatusBadRequest,
@@ -100,7 +99,7 @@ func TestLogIn(t *testing.T) {
 		{
 			name:    "random error",
 			request: requestBuilder(logInRequest),
-			setupDomain: func(d *mocks.Domain, tc *testCase) {
+			setupDomain: func(d *domain.MockDomain, tc *testCase) {
 				d.EXPECT().LogIn(mock.Anything, userMatcher).Return(domain.User{}, errors.New("random error"))
 			},
 			responseCode: http.StatusBadRequest,
@@ -112,7 +111,7 @@ func TestLogIn(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Create mocks
 			rr := httptest.NewRecorder()
-			baseMock := mocks.NewDomain(t)
+			baseMock := domain.NewMockDomain(t)
 
 			// Setup mocks
 			if tc.setupDomain != nil {
@@ -138,7 +137,7 @@ func TestApiDelete(t *testing.T) {
 	type testCase struct {
 		name         string
 		request      *http.Request
-		setupDomain  func(*mocks.Domain, *testCase)
+		setupDomain  func(*domain.MockDomain, *testCase)
 		responseCode int
 		responseBody string
 	}
@@ -151,7 +150,7 @@ func TestApiDelete(t *testing.T) {
 		{
 			name:    "success",
 			request: requestBuilder(deleteRequest),
-			setupDomain: func(d *mocks.Domain, tc *testCase) {
+			setupDomain: func(d *domain.MockDomain, tc *testCase) {
 				d.EXPECT().Delete(mock.Anything, userMatcher).Return(true, nil)
 			},
 			responseCode: http.StatusOK,
@@ -160,14 +159,14 @@ func TestApiDelete(t *testing.T) {
 		{
 			name:         "validation failed",
 			request:      requestBuilder(`{ "email": "djvukovic@gmail.com" }`),
-			setupDomain:  func(d *mocks.Domain, tc *testCase) {},
+			setupDomain:  func(d *domain.MockDomain, tc *testCase) {},
 			responseCode: http.StatusBadRequest,
 			responseBody: utils.ErrorJSON("missing password"),
 		},
 		{
 			name:    "delete non existing user",
 			request: requestBuilder(deleteRequest),
-			setupDomain: func(d *mocks.Domain, tc *testCase) {
+			setupDomain: func(d *domain.MockDomain, tc *testCase) {
 				d.EXPECT().Delete(mock.Anything, userMatcher).Return(false, domain.ErrUserNotExist)
 			},
 			responseCode: http.StatusBadRequest,
@@ -176,7 +175,7 @@ func TestApiDelete(t *testing.T) {
 		{
 			name:    "delete authentication failed",
 			request: requestBuilder(deleteRequest),
-			setupDomain: func(d *mocks.Domain, tc *testCase) {
+			setupDomain: func(d *domain.MockDomain, tc *testCase) {
 				d.EXPECT().Delete(mock.Anything, userMatcher).Return(false, domain.ErrInvalidCredentials)
 			},
 			responseCode: http.StatusBadRequest,
@@ -185,7 +184,7 @@ func TestApiDelete(t *testing.T) {
 		{
 			name:    "delete error",
 			request: requestBuilder(deleteRequest),
-			setupDomain: func(d *mocks.Domain, tc *testCase) {
+			setupDomain: func(d *domain.MockDomain, tc *testCase) {
 				d.EXPECT().Delete(mock.Anything, userMatcher).Return(false, errors.New("new error"))
 			},
 			responseCode: http.StatusInternalServerError,
@@ -197,7 +196,7 @@ func TestApiDelete(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Create mocks
 			rr := httptest.NewRecorder()
-			baseMock := mocks.NewDomain(t)
+			baseMock := domain.NewMockDomain(t)
 
 			// Setup mocks
 			tc.setupDomain(baseMock, &tc)
@@ -229,7 +228,7 @@ func TestApiSignUp(t *testing.T) {
 	type testCase struct {
 		name         string
 		request      *http.Request
-		setupDomain  func(*mocks.Domain, *testCase)
+		setupDomain  func(*domain.MockDomain, *testCase)
 		responseCode int
 		responseBody string
 	}
@@ -245,7 +244,7 @@ func TestApiSignUp(t *testing.T) {
 		{
 			name:    "error user already exists",
 			request: requestBuilder(signUpRequest),
-			setupDomain: func(d *mocks.Domain, tc *testCase) {
+			setupDomain: func(d *domain.MockDomain, tc *testCase) {
 				d.EXPECT().SignUp(mock.Anything, domainUserMatcher).Return(domain.User{}, domain.ErrUserAlreadyExists)
 			},
 			responseCode: http.StatusBadRequest,
@@ -254,7 +253,7 @@ func TestApiSignUp(t *testing.T) {
 		{
 			name:    "success",
 			request: requestBuilder(signUpRequest),
-			setupDomain: func(d *mocks.Domain, tc *testCase) {
+			setupDomain: func(d *domain.MockDomain, tc *testCase) {
 				d.EXPECT().SignUp(mock.Anything, domainUserMatcher).Return(newUser, nil)
 			},
 			responseCode: http.StatusOK,
@@ -266,7 +265,7 @@ func TestApiSignUp(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			// Create mocks
 			rr := httptest.NewRecorder()
-			baseMock := mocks.NewDomain(t)
+			baseMock := domain.NewMockDomain(t)
 
 			// Setup mocks
 			tc.setupDomain(baseMock, &tc)

@@ -24,7 +24,6 @@ func NewSetup(ctx context.Context, logger *slog.Logger) Setup {
 	}
 }
 
-//go:generate mockery --name Domain
 type Domain interface {
 	SignUp(setup Setup, user User) (newUser User, err error)
 	LogIn(setup Setup, user User) (existing User, err error)
@@ -116,6 +115,7 @@ func (d *domain) ResetPasswordRequest(setup Setup, user User) (sentTo User, err 
 	_, err = forgetPasswordModel.Create(sentTo.ID)
 
 	if err != nil {
+		sentTo = User{}
 		return
 	}
 
@@ -147,11 +147,13 @@ func (d *domain) SignUp(setup Setup, user User) (newUser User, err error) {
 	user.Verified = !d.config.RequireVerification
 
 	err = d.db.Atomic(func(txRepo Repository) error {
-		newUser, err := txRepo.User(setup.ctx).Create(user)
+		newUserCopy, err := txRepo.User(setup.ctx).Create(user)
 		if err != nil {
 			err = fmt.Errorf("domain SignUp -> failed to create a new user %w", err)
 			return err
 		}
+
+		newUser = newUserCopy
 
 		if !d.config.RequireVerification {
 			return nil
@@ -162,11 +164,12 @@ func (d *domain) SignUp(setup Setup, user User) (newUser User, err error) {
 			return e
 		}
 
-		_, e = txRepo.VerifyAccount(setup.ctx).Create(token.String(), newUser.ID)
+		_, e = txRepo.VerifyAccount(setup.ctx).Create(token.String(), newUserCopy.ID)
 		if e != nil {
 			return e
 		}
 
+		newUser = newUserCopy
 		return nil
 	})
 

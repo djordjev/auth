@@ -1,1 +1,25 @@
-with-expecter: True
+with-expecter: true
+packages:
+    github.com/djordjev/auth/internal/domain:
+      interfaces:
+        Repository:
+          config:
+            inpackage: true
+            dir: "{{.InterfaceDirRelative}}"
+        RepositoryUser:
+          config:
+            inpackage: true
+            dir: "{{.InterfaceDirRelative}}"
+        RepositoryVerifyAccount:
+          config:
+            inpackage: true
+            dir: "{{.InterfaceDirRelative}}"
+        RepositoryForgetPassword:
+          config:
+            inpackage: true
+            dir: "{{.InterfaceDirRelative}}"
+        Domain:
+          config:
+            inpackage: true
+            dir: "{{.InterfaceDirRelative}}"
+
