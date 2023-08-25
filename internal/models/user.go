@@ -11,7 +11,7 @@ import (
 )
 
 type User struct {
-	gorm.Model
+	ModelWithDeletes
 	Email    string  `gorm:"unique;uniqueIndex;not null"`
 	Password string  `gorm:"not null"`
 	Username *string `gorm:"unique;uniqueIndex"`
@@ -27,7 +27,8 @@ type repositoryUser struct {
 func (r *repositoryUser) GetByEmail(email string) (user domain.User, err error) {
 	q := r.db.Session(&gorm.Session{})
 
-	result := q.Where("email = ?", email).First(&user)
+	modelUser := User{}
+	result := q.Where("email = ?", email).First(&modelUser)
 
 	if result.Error == gorm.ErrRecordNotFound {
 		err = modelErrors.ErrNotFound
@@ -37,13 +38,16 @@ func (r *repositoryUser) GetByEmail(email string) (user domain.User, err error) 
 		return
 	}
 
+	user = modelUserToDomainUser(modelUser)
+
 	return
 }
 
 func (r *repositoryUser) GetByUsername(username string) (user domain.User, err error) {
 	q := r.db.Session(&gorm.Session{})
 
-	result := q.Where("username = ?", username).First(&user)
+	modelUser := User{}
+	result := q.Where("username = ?", username).First(&modelUser)
 
 	if result.Error == gorm.ErrRecordNotFound {
 		err = modelErrors.ErrNotFound
@@ -53,11 +57,15 @@ func (r *repositoryUser) GetByUsername(username string) (user domain.User, err e
 		return
 	}
 
+	user = modelUserToDomainUser(modelUser)
+
 	return
 }
 
 func (r *repositoryUser) Create(user domain.User) (newUser domain.User, err error) {
-	result := r.db.Create(&user)
+	modelUser := domainUserToModelUser(user)
+
+	result := r.db.Create(&modelUser)
 	if result.Error != nil {
 		err = fmt.Errorf("model Create -> unable to create user %w", result.Error)
 		return
@@ -68,7 +76,9 @@ func (r *repositoryUser) Create(user domain.User) (newUser domain.User, err erro
 		return
 	}
 
-	return user, nil
+	newUser = modelUserToDomainUser(modelUser)
+
+	return
 }
 
 func (r *repositoryUser) Delete(id uint) (success bool, err error) {
@@ -90,7 +100,8 @@ func (r *repositoryUser) Verify(user domain.User) error {
 		return fmt.Errorf("missing user ID in update function")
 	}
 
-	result := r.db.Model(&user).Updates(User{Verified: true})
+	modelUser := domainUserToModelUser(user)
+	result := r.db.Model(&modelUser).Updates(User{Verified: true})
 	if result.Error != nil {
 		return fmt.Errorf("failed to verify user with ID %d %w", user.ID, result.Error)
 	}
@@ -103,7 +114,8 @@ func (r *repositoryUser) SetPassword(user domain.User, password string) error {
 		return fmt.Errorf("missing user ID in update function")
 	}
 
-	result := r.db.Model(&user).Updates(User{Password: password})
+	modelUser := domainUserToModelUser(user)
+	result := r.db.Model(&modelUser).Updates(User{Password: password})
 	if result.Error != nil {
 		return fmt.Errorf("failed to set password for user with ID %d %w", user.ID, result.Error)
 	}

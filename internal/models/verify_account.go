@@ -9,9 +9,9 @@ import (
 )
 
 type VerifyAccount struct {
-	gorm.Model
+	ModelWithDeletes
 	UserID uint
-	User   User
+	User   User   `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	Token  string `gorm:"unique,not null"`
 }
 
@@ -51,7 +51,7 @@ func (v *repositoryVerifyAccount) Verify(token string) (verification domain.Veri
 		return
 	}
 
-	result := v.db.Delete(&ForgetPassword{}, verifyRequest.ID)
+	result := v.db.Delete(&VerifyAccount{}, verifyRequest.ID)
 	if result.Error != nil {
 		err = fmt.Errorf("failed to delete password reset request for user %d %w", verifyRequest.UserID, result.Error)
 		return

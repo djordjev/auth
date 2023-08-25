@@ -10,7 +10,7 @@ import (
 )
 
 type ForgetPassword struct {
-	gorm.Model
+	ModelWithDeletes
 	UserID uint
 	User   User
 	Token  string `gorm:"unique,not null"`
@@ -27,7 +27,13 @@ func (fp *repositoryForgetPassword) Create(token string, userId uint) (request d
 		UserID: userId,
 	}
 
-	result := fp.db.Create(&req)
+	result := fp.db.Where("user_id = ?", userId).Delete(&ForgetPassword{})
+	if result.Error != nil {
+		err = fmt.Errorf("failed to delete previous password change requests for user %d %w", userId, result.Error)
+		return
+	}
+
+	result = fp.db.Create(&req)
 	if result.Error != nil {
 		err = fmt.Errorf("failed to create password request for user %d %w", userId, result.Error)
 		return

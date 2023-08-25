@@ -20,7 +20,8 @@
         "GO_ENV": "development",
         "PORT": "13031",
         "REQUIRE_VERIFICATION": "true"
-      }
+      },
+      "dlvFlags": ["--check-go-version=false"]
     }
   ]
 }
