@@ -40,8 +40,28 @@ func (v *repositoryVerifyAccount) Create(token string, userId uint) (verificatio
 }
 
 func (v *repositoryVerifyAccount) Verify(token string) (verification domain.VerifyAccount, err error) {
-	//TODO implement me
-	panic("implement me")
+	verifyRequest := VerifyAccount{}
+
+	stored := v.db.Where("token = ?", token).First(&verifyRequest)
+	if stored.Error == gorm.ErrRecordNotFound {
+		err = fmt.Errorf("there's no verify request associated with token %s %w", token, stored.Error)
+		return
+	} else if stored.Error != nil {
+		err = fmt.Errorf("failed to find verify token %s %w", token, stored.Error)
+		return
+	}
+
+	result := v.db.Delete(&ForgetPassword{}, verifyRequest.ID)
+	if result.Error != nil {
+		err = fmt.Errorf("failed to delete password reset request for user %d %w", verifyRequest.UserID, result.Error)
+		return
+	}
+
+	verification.ID = verifyRequest.ID
+	verification.Token = token
+	verification.UserID = verifyRequest.UserID
+
+	return
 }
 
 func newRepositoryVerifyAccount(ctx context.Context, db *gorm.DB) *repositoryVerifyAccount {

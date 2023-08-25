@@ -14,7 +14,7 @@ type User struct {
 	gorm.Model
 	Email    string  `gorm:"unique;uniqueIndex;not null"`
 	Password string  `gorm:"not null"`
-	Username *string `gorm:"unique"`
+	Username *string `gorm:"unique;uniqueIndex"`
 	Role     string  `gorm:"default:regular"`
 	Verified bool    `gorm:"default:false"`
 }
@@ -72,6 +72,16 @@ func (r *repositoryUser) Create(user domain.User) (newUser domain.User, err erro
 }
 
 func (r *repositoryUser) Delete(id uint) (success bool, err error) {
+	user := User{}
+	user.ID = id
+
+	result := r.db.Delete(&user)
+
+	if result.Error != nil {
+		err = fmt.Errorf("model Delete -> failed to delete user with id %d %w", id, result.Error)
+		return
+	}
+
 	return true, nil
 }
 

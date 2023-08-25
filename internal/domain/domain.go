@@ -112,7 +112,13 @@ func (d *domain) ResetPasswordRequest(setup Setup, user User) (sentTo User, err 
 		return
 	}
 
-	_, err = forgetPasswordModel.Create(sentTo.ID)
+	token, err := uuid.NewUUID()
+	if err != nil {
+		err = fmt.Errorf("domain ResetPasswordRequest -> failed to generate token %w", err)
+		return
+	}
+
+	_, err = forgetPasswordModel.Create(token.String(), sentTo.ID)
 
 	if err != nil {
 		sentTo = User{}
