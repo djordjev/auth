@@ -53,7 +53,7 @@ func (v *repositoryVerifyAccount) Verify(token string) (verification domain.Veri
 
 	result := v.db.Delete(&VerifyAccount{}, verifyRequest.ID)
 	if result.Error != nil {
-		err = fmt.Errorf("failed to delete password reset request for user %d %w", verifyRequest.UserID, result.Error)
+		err = fmt.Errorf("failed to delete verification request for user %d %w", verifyRequest.UserID, result.Error)
 		return
 	}
 
