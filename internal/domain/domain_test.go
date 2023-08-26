@@ -363,7 +363,7 @@ func TestPasswordRequest(t *testing.T) {
 			inputUser: User{Username: "djvukovic"},
 			setupModels: func(ru *MockRepositoryUser, rfp *MockRepositoryForgetPassword, tc *testCase) {
 				ru.EXPECT().GetByUsername(tc.inputUser.Username).Return(existing, nil)
-				rfp.EXPECT().Create(existing.ID).Return(ForgetPassword{}, nil)
+				rfp.EXPECT().Create(mock.Anything, existing.ID).Return(ForgetPassword{}, nil)
 			},
 			returnUser: existing,
 		},
@@ -388,7 +388,7 @@ func TestPasswordRequest(t *testing.T) {
 			inputUser: User{Username: "djvukovic"},
 			setupModels: func(ru *MockRepositoryUser, rfp *MockRepositoryForgetPassword, tc *testCase) {
 				ru.EXPECT().GetByUsername(tc.inputUser.Username).Return(existing, nil)
-				rfp.EXPECT().Create(existing.ID).Return(ForgetPassword{}, errModel)
+				rfp.EXPECT().Create(mock.Anything, existing.ID).Return(ForgetPassword{}, errModel)
 			},
 			returnError: errModel,
 		},

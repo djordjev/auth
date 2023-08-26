@@ -87,6 +87,11 @@ func (r *repositoryUser) Delete(id uint) (success bool, err error) {
 
 	result := r.db.Delete(&user)
 
+	if result.RowsAffected != 1 {
+		err = fmt.Errorf("model Delete -> user with id %d does not exist %w", id, result.Error)
+		return
+	}
+
 	if result.Error != nil {
 		err = fmt.Errorf("model Delete -> failed to delete user with id %d %w", id, result.Error)
 		return
@@ -106,6 +111,10 @@ func (r *repositoryUser) Verify(user domain.User) error {
 		return fmt.Errorf("failed to verify user with ID %d %w", user.ID, result.Error)
 	}
 
+	if result.RowsAffected != 1 {
+		return fmt.Errorf("user with id %d does not exist", user.ID)
+	}
+
 	return nil
 }
 
@@ -118,6 +127,10 @@ func (r *repositoryUser) SetPassword(user domain.User, password string) error {
 	result := r.db.Model(&modelUser).Updates(User{Password: password})
 	if result.Error != nil {
 		return fmt.Errorf("failed to set password for user with ID %d %w", user.ID, result.Error)
+	}
+
+	if result.RowsAffected != 1 {
+		return fmt.Errorf("user with id %d does not exist", user.ID)
 	}
 
 	return nil
