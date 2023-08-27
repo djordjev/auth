@@ -22,4 +22,8 @@ packages:
           config:
             inpackage: true
             dir: "{{.InterfaceDirRelative}}"
+        Notifier:
+          config:
+            inpackage: true
+            dir: "{{.InterfaceDirRelative}}"
 

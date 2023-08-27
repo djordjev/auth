@@ -19,7 +19,12 @@
         "DOMAIN": "localhost",
         "GO_ENV": "development",
         "PORT": "13031",
-        "REQUIRE_VERIFICATION": "true"
+        "REQUIRE_VERIFICATION": "true",
+        "MAILJET_API_KEY": "1926dffc8c98ce028e3e99a98027325d",
+        "MAILJET_SECRET_KEY": "56b2f3af9e033a088c79dce0642baea4",
+        "SENDER": "auth@gyorgy.io",
+        "VERIFICATION_LINK": "localhost/verify",
+        "FORGET_PASSWORD_LINK": "localhost/forget"
       },
       "dlvFlags": ["--check-go-version=false"]
     }

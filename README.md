@@ -41,3 +41,8 @@ go install github.com/gotesttools/gotestfmt/v2/cmd/gotestfmt@latest
 ```
 
 Note: Make sure to have `$GOPATH/bin` folder in path in order to be able to execute `gotestfmt` command.
+
+#### Mailjet
+
+This project uses [Mailjet](https://www.mailjet.com/) to send emails. In order to be able to send verification / forget passwords mails you'll
+have to set up account on Mailjet. See documentation [here](https://documentation.mailjet.com/hc/en-us)
