@@ -18,3 +18,5 @@
 build
 
 coverage.out
+
+.vscode/launch.json
