@@ -3,6 +3,7 @@ package domain
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	modelErrors "github.com/djordjev/auth/internal/models/errors"
@@ -23,6 +24,7 @@ func TestSignUp(t *testing.T) {
 		config          utils.Config
 		setupUserRepo   func(*MockRepositoryUser, *testCase)
 		setupVerifyRepo func(*MockRepositoryVerifyAccount, *testCase)
+		setupNotify     func(*MockNotifier, *testCase)
 		setupRepo       func(*MockRepository, *MockRepositoryUser, *MockRepositoryVerifyAccount, *testCase)
 		returnUser      User
 		returnError     error
@@ -49,6 +51,7 @@ func TestSignUp(t *testing.T) {
 				ru.EXPECT().Create(mock.Anything).Return(User{}, errors.New("create failed"))
 			},
 			setupVerifyRepo: func(rva *MockRepositoryVerifyAccount, tc *testCase) {},
+			setupNotify:     func(mn *MockNotifier, tc *testCase) {},
 			setupRepo: func(r *MockRepository, u *MockRepositoryUser, v *MockRepositoryVerifyAccount, tc *testCase) {
 				r.EXPECT().User(setup.ctx).Return(u)
 
@@ -66,6 +69,7 @@ func TestSignUp(t *testing.T) {
 				ru.EXPECT().GetByEmail(tc.user.Email).Return(User{}, nil)
 			},
 			setupVerifyRepo: func(rva *MockRepositoryVerifyAccount, tc *testCase) {},
+			setupNotify:     func(mn *MockNotifier, tc *testCase) {},
 			setupRepo: func(r *MockRepository, u *MockRepositoryUser, v *MockRepositoryVerifyAccount, tc *testCase) {
 				r.EXPECT().User(setup.ctx).Return(u)
 			},
@@ -82,7 +86,14 @@ func TestSignUp(t *testing.T) {
 				ru.EXPECT().Create(mock.Anything).Return(tc.created, nil)
 			},
 			setupVerifyRepo: func(rva *MockRepositoryVerifyAccount, tc *testCase) {
-				rva.EXPECT().Create(mock.Anything, returnUser.ID).Return(VerifyAccount{}, nil)
+				rva.EXPECT().Create(mock.Anything, returnUser.ID).Return(VerifyAccount{Token: "uuid-token"}, nil)
+			},
+			setupNotify: func(mn *MockNotifier, tc *testCase) {
+				matcher := mock.MatchedBy(func(link string) bool {
+					return strings.Contains(link, "uuid-token")
+				})
+
+				mn.EXPECT().Send(signUpUser.Email, "Verify new account", matcher, matcher).Return(nil)
 			},
 			setupRepo: func(r *MockRepository, u *MockRepositoryUser, v *MockRepositoryVerifyAccount, tc *testCase) {
 				r.EXPECT().User(setup.ctx).Return(u)
@@ -105,6 +116,8 @@ func TestSignUp(t *testing.T) {
 				ru.EXPECT().Create(mock.Anything).Return(tc.created, nil)
 			},
 			setupVerifyRepo: func(rva *MockRepositoryVerifyAccount, tc *testCase) {},
+			setupNotify: func(mn *MockNotifier, tc *testCase) {
+			},
 			setupRepo: func(r *MockRepository, u *MockRepositoryUser, v *MockRepositoryVerifyAccount, tc *testCase) {
 				r.EXPECT().User(setup.ctx).Return(u)
 
@@ -123,14 +136,16 @@ func TestSignUp(t *testing.T) {
 			repository := NewMockRepository(t)
 			userRepository := NewMockRepositoryUser(t)
 			verifyRepository := NewMockRepositoryVerifyAccount(t)
+			notifier := NewMockNotifier(t)
 
 			// Setup mocks
 			tc.setupRepo(repository, userRepository, verifyRepository, &tc)
 			tc.setupUserRepo(userRepository, &tc)
 			tc.setupVerifyRepo(verifyRepository, &tc)
+			tc.setupNotify(notifier, &tc)
 
 			// Run
-			domain := NewDomain(repository, tc.config)
+			domain := NewDomain(repository, tc.config, notifier)
 			usr, err := domain.SignUp(setup, tc.user)
 
 			// Assertions
@@ -216,13 +231,14 @@ func TestLogIn(t *testing.T) {
 			// Create mocks
 			repository := NewMockRepository(t)
 			userRepository := NewMockRepositoryUser(t)
+			notifier := NewMockNotifier(t)
 
 			// Setup mocks
 			repository.EXPECT().User(context.TODO()).Return(userRepository).Maybe()
 			tc.setupUserRepo(userRepository, &tc)
 
 			// Run
-			domain := NewDomain(repository, utils.Config{})
+			domain := NewDomain(repository, utils.Config{}, notifier)
 			user, err := domain.LogIn(setup, tc.inputUser)
 
 			// Assertions
@@ -313,13 +329,14 @@ func TestDelete(t *testing.T) {
 			// Create mocks
 			repository := NewMockRepository(t)
 			userRepository := NewMockRepositoryUser(t)
+			notifier := NewMockNotifier(t)
 
 			// Setup mocks
 			repository.EXPECT().User(context.TODO()).Return(userRepository).Maybe()
 			tc.setupUserRepo(userRepository, &tc)
 
 			// Run
-			domain := NewDomain(repository, utils.Config{})
+			domain := NewDomain(repository, utils.Config{}, notifier)
 			deleted, err := domain.Delete(setup, tc.inputUser)
 
 			// Assertions
@@ -400,6 +417,7 @@ func TestPasswordRequest(t *testing.T) {
 			repository := NewMockRepository(t)
 			userRepository := NewMockRepositoryUser(t)
 			fpRepository := NewMockRepositoryForgetPassword(t)
+			notifier := NewMockNotifier(t)
 
 			// Setup mocks
 			repository.EXPECT().User(context.TODO()).Return(userRepository).Maybe()
@@ -407,7 +425,7 @@ func TestPasswordRequest(t *testing.T) {
 			tc.setupModels(userRepository, fpRepository, &tc)
 
 			// Run
-			domain := NewDomain(repository, utils.Config{})
+			domain := NewDomain(repository, utils.Config{}, notifier)
 			user, err := domain.ResetPasswordRequest(setup, tc.inputUser)
 
 			// Assertions

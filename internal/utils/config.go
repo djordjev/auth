@@ -6,11 +6,9 @@ import (
 	"strconv"
 )
 
-type Smtp struct {
-	Url      string
-	Password string
-	Port     int
-	Username string
+type Mailjet struct {
+	ApiKey    string
+	SecretKey string
 }
 
 type Config struct {
@@ -23,7 +21,10 @@ type Config struct {
 	Port                string
 	GoEnv               string
 	RequireVerification bool
-	Smtp                Smtp
+	Mailjet             Mailjet
+	VerificationLink    string
+	ForgetPasswordLink  string
+	Sender              string
 }
 
 func BuildConfigFromEnv() (Config, error) {
@@ -59,30 +60,12 @@ func BuildConfigFromEnv() (Config, error) {
 		config.RequireVerification = false
 	}
 
-	smtpPort := os.Getenv("SMTP_PORT")
-	smtpUsername := os.Getenv("SMTP_USERNAME")
-	smtpPassword := os.Getenv("SMTP_PASSWORD")
-	smtpURI := os.Getenv("SMTP_URI")
+	config.Mailjet.ApiKey = os.Getenv("MAILJET_API_KEY")
+	config.Mailjet.SecretKey = os.Getenv("MAILJET_SECRET_KEY")
 
-	if smtpUsername != "" && smtpPassword != "" && smtpURI != "" {
-		smtp := Smtp{
-			Url:      smtpURI,
-			Password: smtpPassword,
-			Username: smtpUsername,
-		}
-
-		if smtpPort == "" {
-			smtpPort = "587"
-		}
-
-		if smtpPortNum, err := strconv.Atoi(smtpPort); err == nil {
-			smtp.Port = smtpPortNum
-		} else {
-			return config, err
-		}
-
-		config.Smtp = smtp
-	}
+	config.VerificationLink = os.Getenv("VERIFICATION_LINK")
+	config.ForgetPasswordLink = os.Getenv("FORGET_PASSWORD_LINK")
+	config.Sender = os.Getenv("SENDER")
 
 	return config, nil
 }
@@ -107,5 +90,5 @@ func (config Config) IsDev() bool {
 }
 
 func (config Config) HasEmailSetup() bool {
-	return config.Smtp.Url != "" && config.Smtp.Username != "" && config.Smtp.Password != "" && config.Smtp.Port != 0
+	return config.Mailjet.ApiKey != "" && config.Mailjet.SecretKey != ""
 }

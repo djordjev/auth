@@ -33,13 +33,14 @@ type Domain interface {
 	VerifyPasswordReset(setup Setup, token string, password string) (updated User, err error)
 }
 
-func NewDomain(repository Repository, config utils.Config) Domain {
-	return &domain{db: repository, config: config}
+func NewDomain(repository Repository, config utils.Config, notifier Notifier) Domain {
+	return &domain{db: repository, config: config, notifier: notifier}
 }
 
 type domain struct {
-	db     Repository
-	config utils.Config
+	db       Repository
+	config   utils.Config
+	notifier Notifier
 }
 
 func (d *domain) LogIn(setup Setup, user User) (existingUser User, err error) {
@@ -170,7 +171,16 @@ func (d *domain) SignUp(setup Setup, user User) (newUser User, err error) {
 			return e
 		}
 
-		_, e = txRepo.VerifyAccount(setup.ctx).Create(token.String(), newUserCopy.ID)
+		verificationReq, e := txRepo.VerifyAccount(setup.ctx).Create(token.String(), newUserCopy.ID)
+		if e != nil {
+			return e
+		}
+
+		verificationLink := fmt.Sprintf("%s?t=%s", d.config.VerificationLink, verificationReq.Token)
+		text := fmt.Sprintf(verifyTextTemplate, user.Email, verificationLink)
+		html := fmt.Sprintf(verifyHtmlTemplate, user.Email, verificationLink)
+
+		e = d.notifier.Send(user.Email, "Verify new account", text, html)
 		if e != nil {
 			return e
 		}
