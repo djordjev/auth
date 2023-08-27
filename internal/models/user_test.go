@@ -8,11 +8,10 @@ import (
 	"github.com/djordjev/auth/internal/domain"
 	modelErrors "github.com/djordjev/auth/internal/models/errors"
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/suite"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	"github.com/stretchr/testify/require"
 )
+
+var nonExistingUserID = uint(9223372036)
 
 func newRandomUser() domain.User {
 	email := fmt.Sprintf("djordje.vukovic+%s@gmail.com", uuid.New())
@@ -26,113 +25,274 @@ func newRandomUser() domain.User {
 	}
 }
 
-type RepositoryUserTestSuite struct {
-	suite.Suite
-	conn *gorm.DB
-}
-
-func (suite *RepositoryUserTestSuite) SetupSuite() {
-	conn := getTestConnectionString()
-	db, err := gorm.Open(postgres.Open(conn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
-	})
-
-	if err != nil {
-		suite.FailNow("unable to acquire connection")
-		return
-	}
-
-	suite.conn = db
-}
-
-func (suite *RepositoryUserTestSuite) TestGetByEmailExists() {
+func TestGetByEmail(t *testing.T) {
 	existingUser := newRandomUser()
 
-	res := suite.conn.Create(&existingUser)
-	if res.Error != nil {
-		suite.FailNow("failed to create user")
-		return
+	res := dbConnection.Create(&existingUser)
+	require.Nil(t, res.Error, "failed to initialize db state")
+
+	repo := newRepositoryUser(context.TODO(), dbConnection)
+
+	type testCase struct {
+		name        string
+		email       string
+		result      domain.User
+		resultError error
 	}
 
-	repo := newRepositoryUser(context.TODO(), suite.conn)
-	user, err := repo.GetByEmail(existingUser.Email)
+	tests := []testCase{
+		{
+			name:   "user found",
+			email:  existingUser.Email,
+			result: existingUser,
+		},
+		{
+			name:        "user not found",
+			email:       fmt.Sprintf("not_exist%s", existingUser.Email),
+			resultError: modelErrors.ErrNotFound,
+		},
+	}
 
-	suite.Require().Nil(err)
-	suite.Require().Equal(user.Role, existingUser.Role)
-	suite.Require().Equal(user.Email, existingUser.Email)
-	suite.Require().Equal(user.Password, existingUser.Password)
-	suite.Require().Equal(user.Verified, existingUser.Verified)
-	suite.Require().NotZero(user.ID)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+
+			result, err := repo.GetByEmail(tc.email)
+
+			require.Equal(t, result, tc.result)
+			if tc.resultError != nil {
+				require.ErrorIs(t, tc.resultError, err)
+			} else {
+				require.Nil(t, err)
+			}
+		})
+	}
 }
 
-func (suite *RepositoryUserTestSuite) TestGetByEmailNotExists() {
-	repo := newRepositoryUser(context.TODO(), suite.conn)
-	user, err := repo.GetByEmail(uuid.New().String())
-
-	suite.Require().ErrorIs(err, modelErrors.ErrNotFound)
-	suite.Require().Equal(user, User{})
-}
-
-func (suite *RepositoryUserTestSuite) TestGetByUsernameExists() {
+func TestGetByUsername(t *testing.T) {
 	existingUser := newRandomUser()
 
-	res := suite.conn.Create(&existingUser)
-	if res.Error != nil {
-		suite.FailNow("failed to create user")
-		return
+	res := dbConnection.Create(&existingUser)
+	require.Nil(t, res.Error, "failed to initialize db state")
+
+	repo := newRepositoryUser(context.TODO(), dbConnection)
+
+	type testCase struct {
+		name        string
+		username    string
+		result      domain.User
+		resultError error
 	}
 
-	repo := newRepositoryUser(context.TODO(), suite.conn)
-	user, err := repo.GetByUsername(existingUser.Username)
-
-	suite.Require().Nil(err)
-	suite.Require().Equal(user.Role, existingUser.Role)
-	suite.Require().Equal(user.Email, existingUser.Email)
-	suite.Require().Equal(user.Password, existingUser.Password)
-	suite.Require().Equal(user.Verified, existingUser.Verified)
-	suite.Require().NotZero(user.ID)
-}
-
-func (suite *RepositoryUserTestSuite) TestGetByUsernameNotExists() {
-	repo := newRepositoryUser(context.TODO(), suite.conn)
-	user, err := repo.GetByUsername(uuid.New().String())
-
-	suite.Require().ErrorIs(err, modelErrors.ErrNotFound)
-	suite.Require().Equal(user, User{})
-}
-
-func (suite *RepositoryUserTestSuite) TestCreateSuccess() {
-	repo := newRepositoryUser(context.TODO(), suite.conn)
-
-	newUser := newRandomUser()
-
-	user, err := repo.Create(newUser)
-
-	suite.Require().Nil(err)
-	suite.Require().Equal(user.Role, newUser.Role)
-	suite.Require().Equal(user.Email, newUser.Email)
-	suite.Require().Equal(user.Password, newUser.Password)
-	suite.Require().Equal(user.Verified, newUser.Verified)
-	suite.Require().NotZero(user.ID)
-}
-
-func (suite *RepositoryUserTestSuite) TestCreateError() {
-	newUser := newRandomUser()
-	res := suite.conn.Create(&newUser)
-	if res.Error != nil {
-		suite.FailNow("failed to create user")
-		return
+	tests := []testCase{
+		{
+			name:     "user found",
+			username: existingUser.Username,
+			result:   existingUser,
+		},
+		{
+			name:        "user not found",
+			username:    fmt.Sprintf("not_exist%s", existingUser.Email),
+			resultError: modelErrors.ErrNotFound,
+		},
 	}
 
-	repo := newRepositoryUser(context.TODO(), suite.conn)
-	user, err := repo.Create(newUser)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
 
-	suite.Require().Contains(err.Error(), "unable to create user")
-	suite.Require().Equal(user, User{})
+			result, err := repo.GetByUsername(tc.username)
 
+			require.Equal(t, result, tc.result)
+			if tc.resultError != nil {
+				require.ErrorIs(t, tc.resultError, err)
+			} else {
+				require.Nil(t, err)
+			}
+		})
+	}
 }
 
-func TestRepositoryUserTestSuite(t *testing.T) {
-	// TODO: implement those specs
-	// suite.Run(t, new(RepositoryUserTestSuite))
+func TestCreate(t *testing.T) {
+	existingUser := newRandomUser()
+	newUser := newRandomUser()
+
+	res := dbConnection.Create(&existingUser)
+	require.Nil(t, res.Error, "failed to initialize db state")
+
+	repo := newRepositoryUser(context.TODO(), dbConnection)
+
+	type testCase struct {
+		name        string
+		user        domain.User
+		result      domain.User
+		resultError string
+	}
+
+	tests := []testCase{
+		{
+			name:        "user already exists",
+			user:        existingUser,
+			resultError: "unable to create user",
+		},
+		{
+			name:   "success",
+			user:   newUser,
+			result: newUser,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+
+			result, err := repo.Create(tc.user)
+
+			require.Equal(t, result.Email, tc.result.Email)
+			require.Equal(t, result.Username, tc.result.Username)
+			require.Equal(t, result.Role, tc.result.Role)
+			require.Equal(t, result.Verified, tc.result.Verified)
+
+			if tc.resultError != "" {
+				require.ErrorContains(t, err, tc.resultError)
+			} else {
+				require.Nil(t, err)
+				require.NotZero(t, result.ID)
+			}
+		})
+	}
+}
+
+func TestDelete(t *testing.T) {
+	existingUser := newRandomUser()
+
+	res := dbConnection.Create(&existingUser)
+	require.Nil(t, res.Error, "failed to initialize db state")
+
+	repo := newRepositoryUser(context.TODO(), dbConnection)
+
+	type testCase struct {
+		name        string
+		id          uint
+		result      bool
+		resultError string
+	}
+
+	tests := []testCase{
+		{
+			name:   "deletes existing user",
+			id:     existingUser.ID,
+			result: true,
+		},
+		{
+			name:        "user does not exists",
+			id:          nonExistingUserID,
+			result:      false,
+			resultError: "does not exist",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+
+			result, err := repo.Delete(tc.id)
+
+			if tc.resultError != "" {
+				require.ErrorContains(t, err, tc.resultError)
+				require.False(t, result)
+			} else {
+				require.Nil(t, err)
+				require.True(t, result)
+			}
+		})
+	}
+}
+
+func TestVerify(t *testing.T) {
+	existingUser := newRandomUser()
+
+	res := dbConnection.Create(&existingUser)
+	require.Nil(t, res.Error, "failed to initialize db state")
+
+	repo := newRepositoryUser(context.TODO(), dbConnection)
+
+	type testCase struct {
+		name   string
+		user   domain.User
+		result string
+	}
+
+	tests := []testCase{
+		{
+			name:   "verifies user",
+			user:   existingUser,
+			result: "",
+		},
+		{
+			name:   "user doesn't have ID",
+			user:   domain.User{},
+			result: "missing user ID in update function",
+		},
+		{
+			name:   "fails to verify",
+			user:   domain.User{ID: nonExistingUserID},
+			result: "does not exist",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+
+			result := repo.Verify(tc.user)
+
+			if tc.result != "" {
+				require.ErrorContains(t, result, tc.result)
+			} else {
+				require.Nil(t, result)
+			}
+		})
+	}
+}
+
+func TestSetPassword(t *testing.T) {
+	existingUser := newRandomUser()
+
+	res := dbConnection.Create(&existingUser)
+	require.Nil(t, res.Error, "failed to initialize db state")
+
+	repo := newRepositoryUser(context.TODO(), dbConnection)
+
+	type testCase struct {
+		name   string
+		user   domain.User
+		result string
+	}
+
+	tests := []testCase{
+		{
+			name:   "updates password",
+			user:   existingUser,
+			result: "",
+		},
+		{
+			name:   "user doesn't have ID",
+			user:   domain.User{},
+			result: "missing user ID in update function",
+		},
+		{
+			name:   "fails to update",
+			user:   domain.User{ID: nonExistingUserID},
+			result: "does not exist",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+
+			result := repo.SetPassword(tc.user, "random_password")
+
+			if tc.result != "" {
+				require.ErrorContains(t, result, tc.result)
+			} else {
+				require.Nil(t, result)
+			}
+		})
+	}
 }

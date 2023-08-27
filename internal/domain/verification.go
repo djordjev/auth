@@ -25,7 +25,7 @@ func (d *domain) VerifyAccount(setup Setup, token string) (verified bool, err er
 		return nil
 	})
 
-	verified = err != nil
+	verified = err == nil
 	return
 }
 
@@ -45,11 +45,13 @@ func (d *domain) VerifyPasswordReset(setup Setup, token string, password string)
 		}
 
 		user := User{ID: resetRequest.UserID}
-		updateErr := txRepo.User(setup.ctx).SetPassword(user, string(hash))
+		newPassword := string(hash)
+		updateErr := txRepo.User(setup.ctx).SetPassword(user, newPassword)
 		if updateErr != nil {
 			return fmt.Errorf("failed to reset password %w", err)
 		}
 
+		updated.Password = newPassword
 		return nil
 	})
 

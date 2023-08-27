@@ -17,23 +17,23 @@ func (_m *MockRepositoryForgetPassword) EXPECT() *MockRepositoryForgetPassword_E
 	return &MockRepositoryForgetPassword_Expecter{mock: &_m.Mock}
 }
 
-// Create provides a mock function with given fields: userId
-func (_m *MockRepositoryForgetPassword) Create(userId uint) (ForgetPassword, error) {
-	ret := _m.Called(userId)
+// Create provides a mock function with given fields: token, userId
+func (_m *MockRepositoryForgetPassword) Create(token string, userId uint) (ForgetPassword, error) {
+	ret := _m.Called(token, userId)
 
 	var r0 ForgetPassword
 	var r1 error
-	if rf, ok := ret.Get(0).(func(uint) (ForgetPassword, error)); ok {
-		return rf(userId)
+	if rf, ok := ret.Get(0).(func(string, uint) (ForgetPassword, error)); ok {
+		return rf(token, userId)
 	}
-	if rf, ok := ret.Get(0).(func(uint) ForgetPassword); ok {
-		r0 = rf(userId)
+	if rf, ok := ret.Get(0).(func(string, uint) ForgetPassword); ok {
+		r0 = rf(token, userId)
 	} else {
 		r0 = ret.Get(0).(ForgetPassword)
 	}
 
-	if rf, ok := ret.Get(1).(func(uint) error); ok {
-		r1 = rf(userId)
+	if rf, ok := ret.Get(1).(func(string, uint) error); ok {
+		r1 = rf(token, userId)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -47,14 +47,15 @@ type MockRepositoryForgetPassword_Create_Call struct {
 }
 
 // Create is a helper method to define mock.On call
+//   - token string
 //   - userId uint
-func (_e *MockRepositoryForgetPassword_Expecter) Create(userId interface{}) *MockRepositoryForgetPassword_Create_Call {
-	return &MockRepositoryForgetPassword_Create_Call{Call: _e.mock.On("Create", userId)}
+func (_e *MockRepositoryForgetPassword_Expecter) Create(token interface{}, userId interface{}) *MockRepositoryForgetPassword_Create_Call {
+	return &MockRepositoryForgetPassword_Create_Call{Call: _e.mock.On("Create", token, userId)}
 }
 
-func (_c *MockRepositoryForgetPassword_Create_Call) Run(run func(userId uint)) *MockRepositoryForgetPassword_Create_Call {
+func (_c *MockRepositoryForgetPassword_Create_Call) Run(run func(token string, userId uint)) *MockRepositoryForgetPassword_Create_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(uint))
+		run(args[0].(string), args[1].(uint))
 	})
 	return _c
 }
@@ -64,7 +65,7 @@ func (_c *MockRepositoryForgetPassword_Create_Call) Return(request ForgetPasswor
 	return _c
 }
 
-func (_c *MockRepositoryForgetPassword_Create_Call) RunAndReturn(run func(uint) (ForgetPassword, error)) *MockRepositoryForgetPassword_Create_Call {
+func (_c *MockRepositoryForgetPassword_Create_Call) RunAndReturn(run func(string, uint) (ForgetPassword, error)) *MockRepositoryForgetPassword_Create_Call {
 	_c.Call.Return(run)
 	return _c
 }

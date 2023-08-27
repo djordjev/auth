@@ -26,6 +26,6 @@ type RepositoryVerifyAccount interface {
 }
 
 type RepositoryForgetPassword interface {
-	Create(userId uint) (request ForgetPassword, err error)
+	Create(token string, userId uint) (request ForgetPassword, err error)
 	Delete(token string) (request ForgetPassword, err error)
 }
