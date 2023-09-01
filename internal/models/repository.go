@@ -44,6 +44,10 @@ func (r *repository) ForgetPassword(ctx context.Context) domain.RepositoryForget
 	return newRepositoryForgetPassword(ctx, r.db)
 }
 
+func (r *repository) Session(ctx context.Context) domain.RepositorySession {
+	return newRepositorySession(ctx, r.redis)
+}
+
 func NewRepository(db *gorm.DB, redis *redis.Client) *repository {
 	return &repository{db: db, redis: redis}
 }

@@ -64,6 +64,15 @@ func (d *domain) LogIn(setup Setup, user User) (existingUser User, err error) {
 		return
 	}
 
+	// Create session
+	session, err := d.db.Session(setup.ctx).Create(existingUser)
+	if err != nil {
+		err = fmt.Errorf("unable to create session for user id %d %w", existingUser.ID, err)
+		return
+	}
+
+	fmt.Println(session)
+
 	return
 
 }

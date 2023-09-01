@@ -1,6 +1,8 @@
 package domain
 
-import "context"
+import (
+	"context"
+)
 
 type AtomicFn = func(txRepo Repository) error
 
@@ -9,6 +11,7 @@ type Repository interface {
 	User(ctx context.Context) RepositoryUser
 	VerifyAccount(ctx context.Context) RepositoryVerifyAccount
 	ForgetPassword(ctx context.Context) RepositoryForgetPassword
+	Session(ctx context.Context) RepositorySession
 }
 
 type RepositoryUser interface {
@@ -28,4 +31,8 @@ type RepositoryVerifyAccount interface {
 type RepositoryForgetPassword interface {
 	Create(token string, userId uint) (request ForgetPassword, err error)
 	Delete(token string) (request ForgetPassword, err error)
+}
+
+type RepositorySession interface {
+	Create(user User) (session Session, err error)
 }
