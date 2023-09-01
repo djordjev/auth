@@ -2,19 +2,22 @@ package models
 
 import (
 	"context"
+
 	"github.com/djordjev/auth/internal/domain"
+	"github.com/redis/go-redis/v9"
 
 	"gorm.io/gorm"
 )
 
 type repository struct {
-	db *gorm.DB
+	db    *gorm.DB
+	redis *redis.Client
 }
 
 func (r *repository) Atomic(fn domain.AtomicFn) (err error) {
 	tx := r.db.Begin()
 
-	newRepo := NewRepository(tx)
+	newRepo := NewRepository(tx, r.redis)
 
 	err = fn(newRepo)
 
@@ -41,6 +44,6 @@ func (r *repository) ForgetPassword(ctx context.Context) domain.RepositoryForget
 	return newRepositoryForgetPassword(ctx, r.db)
 }
 
-func NewRepository(db *gorm.DB) *repository {
-	return &repository{db: db}
+func NewRepository(db *gorm.DB, redis *redis.Client) *repository {
+	return &repository{db: db, redis: redis}
 }

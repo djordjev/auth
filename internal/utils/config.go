@@ -25,6 +25,10 @@ type Config struct {
 	VerificationLink    string
 	ForgetPasswordLink  string
 	Sender              string
+	RedisPort           uint
+	RedisHost           string
+	RedisPassword       string
+	RedisDatabase       int
 }
 
 func BuildConfigFromEnv() (Config, error) {
@@ -66,6 +70,31 @@ func BuildConfigFromEnv() (Config, error) {
 	config.VerificationLink = os.Getenv("VERIFICATION_LINK")
 	config.ForgetPasswordLink = os.Getenv("FORGET_PASSWORD_LINK")
 	config.Sender = os.Getenv("SENDER")
+
+	if os.Getenv("REDIS_PORT") == "" {
+		config.RedisPort = 6379
+	} else {
+		redisPort, err := strconv.ParseInt(os.Getenv("REDIS_PORT"), 10, 64)
+		if err != nil {
+			return Config{}, err
+		}
+
+		config.RedisPort = uint(redisPort)
+	}
+
+	config.RedisHost = os.Getenv("REDIS_HOST")
+	config.RedisPassword = os.Getenv("REDIS_PASSWORD")
+
+	if os.Getenv("REDIS_DB") == "" {
+		config.RedisDatabase = 0
+	} else {
+		redisDB, err := strconv.Atoi(os.Getenv("REDIS_DB"))
+		if err != nil {
+			return Config{}, err
+		}
+
+		config.RedisDatabase = redisDB
+	}
 
 	return config, nil
 }
