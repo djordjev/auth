@@ -20,3 +20,8 @@ type ForgetPassword struct {
 	Token  string
 	UserID uint
 }
+
+type Session struct {
+	ID   string
+	User User
+}

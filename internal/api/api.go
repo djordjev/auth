@@ -52,6 +52,8 @@ func (a *jsonApi) setupRoutes() {
 	r.Post("/verify", a.postVerifyAccount)
 	r.Post("/forget", a.postForgetPassword)
 	r.Post("/passwordreset", a.postVerifyPasswordReset)
+	r.Get("/session", a.getSession)
+	r.Post("/logout", a.postLogout)
 }
 
 func (a *jsonApi) Mount(point string) {

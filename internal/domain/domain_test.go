@@ -167,11 +167,12 @@ func TestLogIn(t *testing.T) {
 	setup := Setup{ctx: context.TODO(), logger: utils.NewSilentLogger()}
 
 	type testCase struct {
-		name          string
-		inputUser     User
-		setupUserRepo func(*MockRepositoryUser, *testCase)
-		returnUser    User
-		returnError   error
+		name             string
+		inputUser        User
+		setupUserRepo    func(*MockRepositoryUser, *testCase)
+		setupSessionRepo func(*MockRepositorySession, *testCase)
+		returnUser       User
+		returnError      error
 	}
 
 	hash, _ := bcrypt.GenerateFromPassword([]byte("testee"), 14)
@@ -192,6 +193,9 @@ func TestLogIn(t *testing.T) {
 			setupUserRepo: func(ru *MockRepositoryUser, tc *testCase) {
 				ru.EXPECT().GetByEmail(tc.inputUser.Email).Return(existing, nil)
 			},
+			setupSessionRepo: func(mrs *MockRepositorySession, tc *testCase) {
+				mrs.EXPECT().Create(mock.Anything).Return(Session{ID: "abc"}, nil)
+			},
 			returnUser: existing,
 		},
 		{
@@ -200,8 +204,9 @@ func TestLogIn(t *testing.T) {
 			setupUserRepo: func(ru *MockRepositoryUser, tc *testCase) {
 				ru.EXPECT().GetByUsername(tc.inputUser.Username).Return(User{}, errModel)
 			},
-			returnUser:  User{},
-			returnError: ErrUserNotExist,
+			setupSessionRepo: func(mrs *MockRepositorySession, tc *testCase) {},
+			returnUser:       User{},
+			returnError:      ErrUserNotExist,
 		},
 		{
 			name:      "email does not exist",
@@ -209,8 +214,9 @@ func TestLogIn(t *testing.T) {
 			setupUserRepo: func(ru *MockRepositoryUser, tc *testCase) {
 				ru.EXPECT().GetByEmail(tc.inputUser.Email).Return(User{}, errModel)
 			},
-			returnUser:  User{},
-			returnError: ErrUserNotExist,
+			setupSessionRepo: func(mrs *MockRepositorySession, tc *testCase) {},
+			returnUser:       User{},
+			returnError:      ErrUserNotExist,
 		},
 		{
 			name:      "incorrect password",
@@ -221,8 +227,9 @@ func TestLogIn(t *testing.T) {
 
 				ru.EXPECT().GetByEmail(tc.inputUser.Email).Return(incorrectPassword, nil)
 			},
-			returnUser:  User{},
-			returnError: ErrInvalidCredentials,
+			setupSessionRepo: func(mrs *MockRepositorySession, tc *testCase) {},
+			returnUser:       User{},
+			returnError:      ErrInvalidCredentials,
 		},
 	}
 
@@ -231,15 +238,18 @@ func TestLogIn(t *testing.T) {
 			// Create mocks
 			repository := NewMockRepository(t)
 			userRepository := NewMockRepositoryUser(t)
+			sessionRepository := NewMockRepositorySession(t)
 			notifier := NewMockNotifier(t)
 
 			// Setup mocks
 			repository.EXPECT().User(context.TODO()).Return(userRepository).Maybe()
+			repository.EXPECT().Session(context.TODO()).Return(sessionRepository).Maybe()
 			tc.setupUserRepo(userRepository, &tc)
+			tc.setupSessionRepo(sessionRepository, &tc)
 
 			// Run
 			domain := NewDomain(repository, utils.Config{}, notifier)
-			user, err := domain.LogIn(setup, tc.inputUser)
+			user, _, err := domain.LogIn(setup, tc.inputUser)
 
 			// Assertions
 			if tc.returnError != nil {

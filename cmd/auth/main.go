@@ -9,6 +9,7 @@ import (
 	"github.com/djordjev/auth/internal/models"
 	"github.com/djordjev/auth/internal/notify"
 	"github.com/djordjev/auth/internal/utils"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -32,7 +33,14 @@ func main() {
 		panic(err)
 	}
 
-	repo := models.NewRepository(db)
+	// Init redis
+	client := redis.NewClient(&redis.Options{
+		Addr:     fmt.Sprintf("%s:%d", config.RedisHost, config.RedisPort),
+		Password: config.RedisPassword,
+		DB:       config.RedisDatabase,
+	})
+
+	repo := models.NewRepository(db, client)
 
 	// Init api
 	logger := utils.MustBuildLogger(config)

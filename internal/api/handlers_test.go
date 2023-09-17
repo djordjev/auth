@@ -70,7 +70,7 @@ func TestLogIn(t *testing.T) {
 			name:    "success",
 			request: requestBuilder(logInRequest),
 			setupDomain: func(d *domain.MockDomain, tc *testCase) {
-				d.EXPECT().LogIn(mock.Anything, userMatcher).Return(successUser, nil)
+				d.EXPECT().LogIn(mock.Anything, userMatcher).Return(successUser, "", nil)
 			},
 			responseCode: http.StatusOK,
 			responseBody: `{"id": 884, "username": "djvukovic", "email": "djvukovic@gmail.com", "role": "admin", "verified": true }`,
@@ -91,7 +91,7 @@ func TestLogIn(t *testing.T) {
 			name:    "invalid credentials",
 			request: requestBuilder(logInRequest),
 			setupDomain: func(d *domain.MockDomain, tc *testCase) {
-				d.EXPECT().LogIn(mock.Anything, userMatcher).Return(domain.User{}, domain.ErrInvalidCredentials)
+				d.EXPECT().LogIn(mock.Anything, userMatcher).Return(domain.User{}, "", domain.ErrInvalidCredentials)
 			},
 			responseCode: http.StatusBadRequest,
 			responseBody: utils.ErrorJSON("invalid credentials"),
@@ -100,7 +100,7 @@ func TestLogIn(t *testing.T) {
 			name:    "random error",
 			request: requestBuilder(logInRequest),
 			setupDomain: func(d *domain.MockDomain, tc *testCase) {
-				d.EXPECT().LogIn(mock.Anything, userMatcher).Return(domain.User{}, errors.New("random error"))
+				d.EXPECT().LogIn(mock.Anything, userMatcher).Return(domain.User{}, "", errors.New("random error"))
 			},
 			responseCode: http.StatusBadRequest,
 			responseBody: utils.ErrorJSON("failed login attempt"),

@@ -107,6 +107,50 @@ func (_c *MockRepository_ForgetPassword_Call) RunAndReturn(run func(context.Cont
 	return _c
 }
 
+// Session provides a mock function with given fields: ctx
+func (_m *MockRepository) Session(ctx context.Context) RepositorySession {
+	ret := _m.Called(ctx)
+
+	var r0 RepositorySession
+	if rf, ok := ret.Get(0).(func(context.Context) RepositorySession); ok {
+		r0 = rf(ctx)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(RepositorySession)
+		}
+	}
+
+	return r0
+}
+
+// MockRepository_Session_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Session'
+type MockRepository_Session_Call struct {
+	*mock.Call
+}
+
+// Session is a helper method to define mock.On call
+//   - ctx context.Context
+func (_e *MockRepository_Expecter) Session(ctx interface{}) *MockRepository_Session_Call {
+	return &MockRepository_Session_Call{Call: _e.mock.On("Session", ctx)}
+}
+
+func (_c *MockRepository_Session_Call) Run(run func(ctx context.Context)) *MockRepository_Session_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context))
+	})
+	return _c
+}
+
+func (_c *MockRepository_Session_Call) Return(_a0 RepositorySession) *MockRepository_Session_Call {
+	_c.Call.Return(_a0)
+	return _c
+}
+
+func (_c *MockRepository_Session_Call) RunAndReturn(run func(context.Context) RepositorySession) *MockRepository_Session_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // User provides a mock function with given fields: ctx
 func (_m *MockRepository) User(ctx context.Context) RepositoryUser {
 	ret := _m.Called(ctx)

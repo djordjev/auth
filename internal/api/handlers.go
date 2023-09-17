@@ -86,7 +86,7 @@ func (a *jsonApi) postLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	setup := domain.NewSetup(r.Context(), logger)
-	user, err := a.domain.LogIn(setup, logInRequestToUser(req))
+	user, session, err := a.domain.LogIn(setup, logInRequestToUser(req))
 	if err == domain.ErrInvalidCredentials {
 		respondWithError(w, "invalid credentials", http.StatusBadRequest)
 		return
@@ -94,6 +94,18 @@ func (a *jsonApi) postLogin(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, "failed login attempt", http.StatusBadRequest)
 		return
 	}
+
+	cookie := &http.Cookie{
+		Name:     a.cfg.SessionCookie,
+		Value:    session,
+		Path:     "/",
+		MaxAge:   int(utils.SESSION_TTL.Milliseconds()),
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	}
+
+	http.SetCookie(w, cookie)
 
 	mustWriteJSONResponse(w, userToLogInResponse(user))
 }
@@ -181,4 +193,71 @@ func (a *jsonApi) postForgetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	mustWriteJSONResponse(w, ForgetPasswordResponse{Success: false})
+}
+
+type SessionResponse struct {
+	ID       uint   `json:"id"`
+	Username string `json:"username"`
+	Role     string `json:"role"`
+	Email    string `json:"email"`
+	Verified bool   `json:"verified"`
+}
+
+func (a *jsonApi) getSession(w http.ResponseWriter, r *http.Request) {
+	var token string
+	logger := utils.MustGetLogger(r)
+
+	tokenCookie, err := r.Cookie(a.cfg.SessionCookie)
+	if err == nil {
+		token = tokenCookie.Value
+	} else {
+		token = r.URL.Query().Get("token")
+	}
+
+	if token == "" {
+		respondWithBadRequest(w)
+		return
+	}
+	setup := domain.NewSetup(r.Context(), logger)
+	user, err := a.domain.Session(setup, token)
+	if err == domain.ErrNoSession {
+		respondWithBadRequest(w)
+		return
+	}
+
+	response := SessionResponse{
+		ID:       user.ID,
+		Username: user.Username,
+		Role:     user.Role,
+		Email:    user.Email,
+		Verified: user.Verified,
+	}
+
+	mustWriteJSONResponse(w, response)
+}
+
+func (a *jsonApi) postLogout(w http.ResponseWriter, r *http.Request) {
+	var token string
+	logger := utils.MustGetLogger(r)
+
+	tokenCookie, err := r.Cookie(a.cfg.SessionCookie)
+	if err == nil {
+		token = tokenCookie.Value
+	} else {
+		token = r.URL.Query().Get("token")
+	}
+
+	if token == "" {
+		respondWithBadRequest(w)
+		return
+	}
+
+	setup := domain.NewSetup(r.Context(), logger)
+	err = a.domain.Logout(setup, token)
+	if err == domain.ErrNoSession {
+		respondWithBadRequest(w)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }

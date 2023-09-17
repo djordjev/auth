@@ -26,11 +26,13 @@ func NewSetup(ctx context.Context, logger *slog.Logger) Setup {
 
 type Domain interface {
 	SignUp(setup Setup, user User) (newUser User, err error)
-	LogIn(setup Setup, user User) (existing User, err error)
+	LogIn(setup Setup, user User) (existing User, sessionKey string, err error)
 	Delete(setup Setup, user User) (deleted bool, err error)
 	VerifyAccount(setup Setup, token string) (verified bool, err error)
 	ResetPasswordRequest(setup Setup, user User) (sentTo User, err error)
 	VerifyPasswordReset(setup Setup, token string, password string) (updated User, err error)
+	Session(setup Setup, token string) (user User, err error)
+	Logout(setup Setup, token string) (err error)
 }
 
 func NewDomain(repository Repository, config utils.Config, notifier Notifier) Domain {
@@ -43,7 +45,7 @@ type domain struct {
 	notifier Notifier
 }
 
-func (d *domain) LogIn(setup Setup, user User) (existingUser User, err error) {
+func (d *domain) LogIn(setup Setup, user User) (existingUser User, sessionKey string, err error) {
 	userModel := d.db.User(setup.ctx)
 
 	if user.Username != "" {
@@ -63,6 +65,15 @@ func (d *domain) LogIn(setup Setup, user User) (existingUser User, err error) {
 		err = ErrInvalidCredentials
 		return
 	}
+
+	// Create session
+	session, err := d.db.Session(setup.ctx).Create(existingUser)
+	if err != nil {
+		err = fmt.Errorf("unable to create session for user id %d %w", existingUser.ID, err)
+		return
+	}
+
+	sessionKey = session.ID
 
 	return
 
@@ -188,6 +199,29 @@ func (d *domain) SignUp(setup Setup, user User) (newUser User, err error) {
 		newUser = newUserCopy
 		return nil
 	})
+
+	return
+}
+
+func (d *domain) Session(setup Setup, token string) (user User, err error) {
+	user, err = d.db.Session(setup.ctx).Get(token)
+
+	if err == modelErrors.ErrNotFound {
+		err = ErrNoSession
+		return
+	} else if err != nil {
+		err = fmt.Errorf("unable to get session %s %w", token, err)
+		return
+	}
+
+	return
+}
+
+func (d *domain) Logout(setup Setup, token string) (err error) {
+	err = d.db.Session(setup.ctx).Delete(token)
+	if err != nil {
+		err = fmt.Errorf("unable to log out user for token %s %w", token, err)
+	}
 
 	return
 }
