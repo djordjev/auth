@@ -18,6 +18,10 @@ packages:
           config:
             inpackage: true
             dir: "{{.InterfaceDirRelative}}"
+        RepositorySession:
+          config:
+            inpackage: true
+            dir: "{{.InterfaceDirRelative}}"
         Domain:
           config:
             inpackage: true

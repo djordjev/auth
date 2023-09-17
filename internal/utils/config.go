@@ -29,6 +29,7 @@ type Config struct {
 	RedisHost           string
 	RedisPassword       string
 	RedisDatabase       int
+	SessionCookie       string
 }
 
 func BuildConfigFromEnv() (Config, error) {
@@ -94,6 +95,11 @@ func BuildConfigFromEnv() (Config, error) {
 		}
 
 		config.RedisDatabase = redisDB
+	}
+
+	config.SessionCookie = os.Getenv("SESSION_COOKIE")
+	if config.SessionCookie == "" {
+		config.SessionCookie = "_tkn"
 	}
 
 	return config, nil

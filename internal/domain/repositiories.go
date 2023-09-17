@@ -35,4 +35,6 @@ type RepositoryForgetPassword interface {
 
 type RepositorySession interface {
 	Create(user User) (session Session, err error)
+	Get(key string) (user User, err error)
+	Delete(key string) error
 }
