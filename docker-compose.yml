@@ -20,5 +20,15 @@ services:
     volumes:
       - redis_data:/data
 
+  server:
+    build: .
+    ports:
+      - "13031:13031"
+    env_file:
+      - .env
+    depends_on:
+      - authdb
+      - redis
+
 volumes:
   redis_data:
