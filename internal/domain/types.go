@@ -7,6 +7,7 @@ type User struct {
 	Password string
 	Role     string
 	Verified bool
+	Payload  map[string]any
 }
 
 type VerifyAccount struct {

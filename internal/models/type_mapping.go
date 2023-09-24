@@ -12,6 +12,7 @@ func modelUserToDomainUser(model User) domain.User {
 		Password: model.Password,
 		Role:     model.Role,
 		Verified: model.Verified,
+		Payload:  model.Payload,
 	}
 }
 
@@ -22,6 +23,7 @@ func domainUserToModelUser(user domain.User) User {
 		Username: &user.Username,
 		Role:     user.Role,
 		Verified: user.Verified,
+		Payload:  user.Payload,
 	}
 
 	usr.ID = user.ID

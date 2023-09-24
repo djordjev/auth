@@ -9,17 +9,19 @@ import (
 )
 
 type SignUpRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Email    string `json:"email"`
-	Role     string `json:"role"`
+	Username string         `json:"username"`
+	Password string         `json:"password"`
+	Email    string         `json:"email"`
+	Role     string         `json:"role"`
+	Payload  map[string]any `json:"payload"`
 }
 
 type SignUpResponse struct {
-	ID       uint   `json:"id"`
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Role     string `json:"role"`
+	ID       uint           `json:"id"`
+	Username string         `json:"username"`
+	Email    string         `json:"email"`
+	Role     string         `json:"role"`
+	Payload  map[string]any `json:"payload"`
 }
 
 func (a *jsonApi) postSignup(w http.ResponseWriter, r *http.Request) {

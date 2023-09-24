@@ -17,6 +17,7 @@ type User struct {
 	Username *string `gorm:"unique;uniqueIndex"`
 	Role     string  `gorm:"default:regular"`
 	Verified bool    `gorm:"default:false"`
+	Payload  JSONB   `gorm:"type:jsonb"`
 }
 
 type repositoryUser struct {
