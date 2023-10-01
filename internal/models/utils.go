@@ -1,16 +1,8 @@
 package models
 
 import (
-	"time"
-
 	"gorm.io/gorm"
 )
-
-type ModelWithDeletes struct {
-	ID        uint `gorm:"primarykey"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-}
 
 func AutoMigrate(db *gorm.DB) error {
 	if err := db.AutoMigrate(&User{}); err != nil {

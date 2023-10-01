@@ -82,3 +82,8 @@ Note: Make sure to have `$GOPATH/bin` folder in path in order to be able to exec
 
 This project uses [Mailjet](https://www.mailjet.com/) to send emails. In order to be able to send verification / forget passwords mails you'll
 have to set up account on Mailjet. See documentation [here](https://documentation.mailjet.com/hc/en-us)
+
+#### pg-mig
+
+Download latest release executable from [pg-mig Releases](https://github.com/djordjev/pg-mig) page. Copy it to a folder
+within `$PATH` so it's accessible from any directory.

@@ -4,18 +4,19 @@ import (
 	"context"
 
 	"github.com/djordjev/auth/internal/domain"
-	"github.com/redis/go-redis/v9"
 
-	"gorm.io/gorm"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/redis/go-redis/v9"
 )
 
 type repository struct {
-	db    *gorm.DB
+	db    query
 	redis *redis.Client
 }
 
 func (r *repository) Atomic(fn domain.AtomicFn) (err error) {
-	tx := r.db.Begin()
+	tx, err := r.db.Begin(context.Background())
 
 	newRepo := NewRepository(tx, r.redis)
 
@@ -23,9 +24,9 @@ func (r *repository) Atomic(fn domain.AtomicFn) (err error) {
 
 	defer func() {
 		if err != nil {
-			tx.Rollback()
+			tx.Rollback(context.Background())
 		} else {
-			tx.Commit()
+			tx.Commit(context.Background())
 		}
 	}()
 
@@ -48,6 +49,13 @@ func (r *repository) Session(ctx context.Context) domain.RepositorySession {
 	return newRepositorySession(ctx, r.redis)
 }
 
-func NewRepository(db *gorm.DB, redis *redis.Client) *repository {
+func NewRepository(db query, redis *redis.Client) *repository {
 	return &repository{db: db, redis: redis}
+}
+
+type query interface {
+	Begin(ctx context.Context) (pgx.Tx, error)
+	Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
+	Query(ctx context.Context, sql string, optionsAndArgs ...interface{}) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, optionsAndArgs ...interface{}) pgx.Row
 }

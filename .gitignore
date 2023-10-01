@@ -22,3 +22,5 @@ coverage.out
 .vscode/launch.json
 
 .env
+
+pgmig.config.json
