@@ -48,20 +48,19 @@ func (fp *repositoryForgetPassword) Create(token string, userId uint64) (request
 }
 
 func (fp *repositoryForgetPassword) Delete(token string) (request domain.ForgetPassword, err error) {
-	forgetPasswordReq := ForgetPassword{}
 
-	row := fp.db.QueryRow(
+	rows, err := fp.db.Query(
 		fp.ctx,
 		"select * from forget_passwords where token = $1",
 		token,
 	)
 
-	err = row.Scan(
-		&forgetPasswordReq.ID,
-		&forgetPasswordReq.CreatedAt,
-		&forgetPasswordReq.UserID,
-		&forgetPasswordReq.Token,
-	)
+	if err != nil {
+		err = fmt.Errorf("failed to query forget passwords %w", err)
+		return
+	}
+
+	forgetPasswordReq, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[ForgetPassword])
 
 	if err == pgx.ErrNoRows {
 		err = fmt.Errorf("there's no reset request associated with token %s %w", token, err)
@@ -78,7 +77,7 @@ func (fp *repositoryForgetPassword) Delete(token string) (request domain.ForgetP
 	)
 
 	if err != nil {
-		err = fmt.Errorf("failed to delete password reset request for user %d %w", forgetPasswordReq.UserID, err)
+		err = fmt.Errorf("failed to delete password reset request for user %d %w", forgetPasswordReq.UserID.Int64, err)
 		return
 	}
 

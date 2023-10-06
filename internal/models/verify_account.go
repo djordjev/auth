@@ -13,7 +13,7 @@ import (
 type VerifyAccount struct {
 	ID        pgtype.Int8        `db:"id"`
 	CreatedAt pgtype.Timestamptz `db:"created_at"`
-	UserID    pgtype.Int8        `db:"userid"`
+	UserID    pgtype.Int8        `db:"user_id"`
 	Token     pgtype.Text        `db:"token"`
 }
 
@@ -45,20 +45,17 @@ func (v *repositoryVerifyAccount) Create(token string, userId uint64) (verificat
 }
 
 func (v *repositoryVerifyAccount) Verify(token string) (verification domain.VerifyAccount, err error) {
-	verifyRequest := VerifyAccount{}
-
-	row := v.db.QueryRow(
+	rows, err := v.db.Query(
 		v.ctx,
 		"select * from verify_accounts where token = $1",
 		token,
 	)
+	if err != nil {
+		err = fmt.Errorf("failed to query verify accounts %w", err)
+		return
+	}
 
-	err = row.Scan(
-		&verifyRequest.ID,
-		&verifyRequest.CreatedAt,
-		&verifyRequest.UserID,
-		&verifyRequest.Token,
-	)
+	verifyRequest, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[VerifyAccount])
 
 	if err == pgx.ErrNoRows {
 		err = fmt.Errorf("there's no verify request associated with token %s %w", token, err)
@@ -75,7 +72,7 @@ func (v *repositoryVerifyAccount) Verify(token string) (verification domain.Veri
 	)
 
 	if err != nil {
-		err = fmt.Errorf("failed to delete verification request for user %d %w", verifyRequest.UserID, err)
+		err = fmt.Errorf("failed to delete verification request for user %d %w", verifyRequest.UserID.Int64, err)
 		return
 	}
 

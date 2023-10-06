@@ -1,21 +1,24 @@
 package models
 
 import (
-	"gorm.io/gorm"
+	"fmt"
+
+	"github.com/djordjev/pg-mig/migrations"
 )
 
-func AutoMigrate(db *gorm.DB) error {
-	if err := db.AutoMigrate(&User{}); err != nil {
-		return err
-	}
+func AutoMigrate(connectionString string) error {
 
-	if err := db.AutoMigrate(&VerifyAccount{}); err != nil {
-		return err
-	}
+	fmt.Println(connectionString)
 
-	if err := db.AutoMigrate(&ForgetPassword{}); err != nil {
-		return err
-	}
+	runner := migrations.NewRunner(
+		"localhost",
+		"tester:testee",
+		"testdb",
+		5433,
+		"/Users/djordjev/Documents/Projects/auth/migrations",
+	)
 
-	return nil
+	err := runner.Run([]string{})
+
+	return err
 }

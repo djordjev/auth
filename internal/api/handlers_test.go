@@ -257,7 +257,7 @@ func TestApiSignUp(t *testing.T) {
 				d.EXPECT().SignUp(mock.Anything, domainUserMatcher).Return(newUser, nil)
 			},
 			responseCode: http.StatusOK,
-			responseBody: `{"id": 31, "username": "djvukovic", "email": "djvukovic@gmail.com", "role": "admin"}`,
+			responseBody: `{"id": 31, "username": "djvukovic", "email": "djvukovic@gmail.com", "role": "admin", "payload": null}`,
 		},
 	}
 
