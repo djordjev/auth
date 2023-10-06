@@ -34,7 +34,6 @@ func TestMain(m *testing.M) {
 
 	count := 10
 	dbUrl := getTestConnectionString()
-	fmt.Println("💿 Connecting to the database")
 
 	for i := 0; i < count; i++ {
 		dbConnection, err = pgxpool.New(context.Background(), dbUrl)
@@ -56,8 +55,6 @@ func TestMain(m *testing.M) {
 		fmt.Println("🛑 Failed to ping database")
 		os.Exit(FailedToPing)
 	}
-
-	fmt.Println("🎉🎉🎉 connected to database")
 
 	defer dbConnection.Close()
 
