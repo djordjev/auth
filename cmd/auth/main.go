@@ -15,20 +15,6 @@ func main() {
 		panic(err)
 	}
 
-	// Auto migrate database
-	// dbUrl := config.GetConnectionString()
-	// pool, err := pgxpool.New(context.Background(), dbUrl)
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	// defer pool.Close()
-
-	// TODO: auto migrate
-	// if err := models.AutoMigrate(db); err != nil {
-	// 	panic(err)
-	// }
-
 	// Start up
 	r := http.NewServeMux()
 	server := server.NewServer(r, config)
