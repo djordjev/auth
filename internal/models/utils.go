@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -20,8 +21,10 @@ func AutoMigrate(connectionString string) error {
 	if envMigrations != "" {
 		migrationsFolder = envMigrations
 	} else {
-		migrationsFolder = filepath.Join(wd, "migrations")
+		migrationsFolder = filepath.Join(wd, "../../migrations")
 	}
+
+	fmt.Println("👿👿👿👿👿👿👿👿👿👿👿👿👿👿👿👿👿👿👿👿👿👿👿👿👿", migrationsFolder)
 
 	trimProtocol := strings.TrimPrefix(connectionString, "postgres://")
 
