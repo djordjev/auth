@@ -11,15 +11,14 @@ import (
 )
 
 type User struct {
-	ID        pgtype.Uint32      `db:"id"`
+	ID        pgtype.Int8        `db:"id"`
 	CreatedAt pgtype.Timestamptz `db:"created_at"`
-	UpdatedAt pgtype.Timestamptz `db:"updated_at"`
 	Email     pgtype.Text        `db:"email"`
 	Password  pgtype.Text        `db:"password"`
 	Username  pgtype.Text        `db:"username"`
 	Role      pgtype.Text        `db:"role"`
 	Verified  pgtype.Bool        `db:"verified"`
-	Payload   pgtype.JSONBCodec  `db:"payload"`
+	Payload   []byte             `db:"payload"`
 }
 
 type repositoryUser struct {
@@ -77,11 +76,11 @@ func (r *repositoryUser) Create(user domain.User) (newUser domain.User, err erro
 
 	result := r.db.QueryRow(
 		r.ctx,
-		"insert into users (email, password, username, role, verified) values ('$1', $2, $3, $4, $5) returning id",
-		modelUser.Email, modelUser.Password, modelUser.Username, modelUser.Role, modelUser.Verified,
+		"insert into users (email, password, username, role, verified, payload) values ($1, $2, $3, $4, $5, $6) returning id",
+		modelUser.Email, modelUser.Password, modelUser.Username, modelUser.Role, modelUser.Verified, modelUser.Payload,
 	)
 
-	var id pgtype.Uint32
+	var id pgtype.Int8
 	err = result.Scan(&id)
 
 	if err != nil {
@@ -90,12 +89,12 @@ func (r *repositoryUser) Create(user domain.User) (newUser domain.User, err erro
 	}
 
 	newUser = modelUserToDomainUser(modelUser)
-	newUser.ID = uint(id.Uint32)
+	newUser.ID = uint64(id.Int64)
 
 	return
 }
 
-func (r *repositoryUser) Delete(id uint) (success bool, err error) {
+func (r *repositoryUser) Delete(id uint64) (success bool, err error) {
 
 	result, err := r.db.Exec(r.ctx, "delete from users where id = $1", id)
 

@@ -9,17 +9,19 @@ import (
 )
 
 type SignUpRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Email    string `json:"email"`
-	Role     string `json:"role"`
+	Username string         `json:"username"`
+	Password string         `json:"password"`
+	Email    string         `json:"email"`
+	Role     string         `json:"role"`
+	Payload  map[string]any `json:"payload"`
 }
 
 type SignUpResponse struct {
-	ID       uint   `json:"id"`
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Role     string `json:"role"`
+	ID       uint64         `json:"id"`
+	Username string         `json:"username"`
+	Email    string         `json:"email"`
+	Role     string         `json:"role"`
+	Payload  map[string]any `json:"payload"`
 }
 
 func (a *jsonApi) postSignup(w http.ResponseWriter, r *http.Request) {
@@ -62,7 +64,7 @@ type LogInRequest struct {
 }
 
 type LogInResponse struct {
-	ID       uint   `json:"id"`
+	ID       uint64 `json:"id"`
 	Username string `json:"username"`
 	Role     string `json:"role"`
 	Email    string `json:"email"`
@@ -196,7 +198,7 @@ func (a *jsonApi) postForgetPassword(w http.ResponseWriter, r *http.Request) {
 }
 
 type SessionResponse struct {
-	ID       uint   `json:"id"`
+	ID       uint64 `json:"id"`
 	Username string `json:"username"`
 	Role     string `json:"role"`
 	Email    string `json:"email"`

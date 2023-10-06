@@ -11,9 +11,9 @@ import (
 )
 
 type ForgetPassword struct {
-	ID        pgtype.Uint32      `db:"id"`
+	ID        pgtype.Int8        `db:"id"`
 	CreatedAt pgtype.Timestamptz `db:"created_at"`
-	UserID    pgtype.Uint32      `db:"user_id"`
+	UserID    pgtype.Int8        `db:"user_id"`
 	Token     pgtype.Text        `db:"token"`
 }
 
@@ -22,7 +22,7 @@ type repositoryForgetPassword struct {
 	db  query
 }
 
-func (fp *repositoryForgetPassword) Create(token string, userId uint) (request domain.ForgetPassword, err error) {
+func (fp *repositoryForgetPassword) Create(token string, userId uint64) (request domain.ForgetPassword, err error) {
 	_, err = fp.db.Exec(fp.ctx, "delete from forget_passwords where user_id = $1", userId)
 
 	if err != nil {
@@ -82,11 +82,9 @@ func (fp *repositoryForgetPassword) Delete(token string) (request domain.ForgetP
 		return
 	}
 
-	val, err := forgetPasswordReq.ID.Uint32Value()
-
-	request.ID = uint(val.Uint32)
+	request.ID = uint64(forgetPasswordReq.ID.Int64)
 	request.Token = token
-	request.UserID = uint(forgetPasswordReq.UserID.Uint32)
+	request.UserID = uint64(forgetPasswordReq.UserID.Int64)
 
 	return
 }

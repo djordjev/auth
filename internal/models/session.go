@@ -80,7 +80,7 @@ func (s *repositorySession) Get(key string) (user domain.User, err error) {
 		return
 	}
 
-	user.ID = uint(id)
+	user.ID = uint64(id)
 	user.Email = result["email"]
 	user.Username = result["username"]
 	user.Password = result["password"]

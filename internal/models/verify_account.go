@@ -11,9 +11,9 @@ import (
 )
 
 type VerifyAccount struct {
-	ID        pgtype.Uint32      `db:"id"`
+	ID        pgtype.Int8        `db:"id"`
 	CreatedAt pgtype.Timestamptz `db:"created_at"`
-	UserID    pgtype.Uint32      `db:"userid"`
+	UserID    pgtype.Int8        `db:"userid"`
 	Token     pgtype.Text        `db:"token"`
 }
 
@@ -22,14 +22,14 @@ type repositoryVerifyAccount struct {
 	db  query
 }
 
-func (v *repositoryVerifyAccount) Create(token string, userId uint) (verification domain.VerifyAccount, err error) {
+func (v *repositoryVerifyAccount) Create(token string, userId uint64) (verification domain.VerifyAccount, err error) {
 	row := v.db.QueryRow(
 		v.ctx,
-		"insert into verify_accounts (created_at, user_id, token) values ($1, $2, $3)",
+		"insert into verify_accounts (created_at, user_id, token) values ($1, $2, $3) returning id",
 		time.Now(), userId, token,
 	)
 
-	var id pgtype.Uint32
+	var id pgtype.Int8
 	err = row.Scan(&id)
 
 	if err != nil {
@@ -38,7 +38,7 @@ func (v *repositoryVerifyAccount) Create(token string, userId uint) (verificatio
 	}
 
 	verification.Token = token
-	verification.ID = uint(id.Uint32)
+	verification.ID = uint64(id.Int64)
 	verification.UserID = userId
 
 	return
@@ -79,9 +79,9 @@ func (v *repositoryVerifyAccount) Verify(token string) (verification domain.Veri
 		return
 	}
 
-	verification.ID = uint(verifyRequest.ID.Uint32)
+	verification.ID = uint64(verifyRequest.ID.Int64)
 	verification.Token = token
-	verification.UserID = uint(verifyRequest.UserID.Uint32)
+	verification.UserID = uint64(verifyRequest.UserID.Int64)
 
 	return
 }
