@@ -19,3 +19,8 @@ tasks:
       - docker container rm -f auth-test-db
       - docker run --name auth-test-db -p 5433:5432 -e POSTGRES_PASSWORD=testee -e POSTGRES_USER=tester -e POSTGRES_DB=testdb -d postgres:15-alpine
       - set -euo pipefail && go test -json -v ./... 2>&1 | tee /tmp/gotest.log | gotestfmt
+
+  migrate_all:
+    cmds:
+      - pg-mig init -db=localhost -name=auth_main -credentials=auth_user:testee -path="./migrations" -ssl=disable -port=5432
+      - pg-mig run
