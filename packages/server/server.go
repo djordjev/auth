@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -9,19 +10,23 @@ import (
 	"github.com/djordjev/auth/internal/models"
 	"github.com/djordjev/auth/internal/notify"
 	"github.com/djordjev/auth/internal/utils"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 type server struct {
 	mux    *http.ServeMux
 	api    api.Api
 	config utils.Config
+	pool   *pgxpool.Pool
 }
 
 func (s *server) Mount(url string) {
 	s.api.Mount(url)
+}
+
+func (s *server) Close() {
+	s.pool.Close()
 }
 
 func NewServer(mux *http.ServeMux, config utils.Config) *server {
@@ -35,7 +40,7 @@ func NewServer(mux *http.ServeMux, config utils.Config) *server {
 func (s *server) setup() {
 	// Init database
 	dbUrl := s.config.GetConnectionString()
-	db, err := gorm.Open(postgres.Open(dbUrl), &gorm.Config{SkipDefaultTransaction: true})
+	pool, err := pgxpool.New(context.Background(), dbUrl)
 	if err != nil {
 		panic(err)
 	}
@@ -48,7 +53,7 @@ func (s *server) setup() {
 	})
 
 	// Setup repos
-	repo := models.NewRepository(db, client)
+	repo := models.NewRepository(pool, client)
 
 	// Init api
 	logger := utils.MustBuildLogger(s.config)

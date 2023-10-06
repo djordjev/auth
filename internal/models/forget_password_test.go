@@ -13,14 +13,14 @@ func TestForgetPasswordCreate(t *testing.T) {
 	existingUser := newRandomUser()
 	token, _ := uuid.NewUUID()
 
-	res := dbConnection.Create(&existingUser)
-	require.Nil(t, res.Error, "failed to initialize db state")
+	existingUser, err := storeUser(existingUser)
+	require.Nil(t, err, "failed to initialize db state")
 
 	repo := newRepositoryForgetPassword(context.TODO(), dbConnection)
 
 	type testCase struct {
 		name   string
-		userId uint
+		userId uint64
 		result domain.VerifyAccount
 	}
 
@@ -51,12 +51,15 @@ func TestForgetPasswordDelete(t *testing.T) {
 	existingUser := newRandomUser()
 	token, _ := uuid.NewUUID()
 
-	res := dbConnection.Create(&existingUser)
-	require.Nil(t, res.Error, "failed to initialize db state")
+	existingUser, err := storeUser(existingUser)
+	require.Nil(t, err, "failed to initialize db state")
 
-	verification := ForgetPassword{UserID: existingUser.ID, Token: token.String()}
-	res = dbConnection.Create(&verification)
-	require.Nil(t, res.Error, "failed to initialize db state")
+	_, err = dbConnection.Exec(
+		context.Background(),
+		"insert into forget_passwords (user_id, token) values ($1, $2)",
+		existingUser.ID, token.String(),
+	)
+	require.Nil(t, err, "failed to initialize db state")
 
 	repo := newRepositoryForgetPassword(context.TODO(), dbConnection)
 

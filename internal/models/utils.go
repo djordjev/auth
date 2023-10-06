@@ -1,29 +1,52 @@
 package models
 
 import (
-	"time"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
 
-	"gorm.io/gorm"
+	"github.com/djordjev/pg-mig/migrations"
 )
 
-type ModelWithDeletes struct {
-	ID        uint `gorm:"primarykey"`
-	CreatedAt time.Time
-	UpdatedAt time.Time
-}
+func AutoMigrate(connectionString string) error {
+	envMigrations := os.Getenv("TEST_DB_MIGRATIONS")
+	wd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
 
-func AutoMigrate(db *gorm.DB) error {
-	if err := db.AutoMigrate(&User{}); err != nil {
+	var migrationsFolder string
+	if envMigrations != "" {
+		migrationsFolder = envMigrations
+	} else {
+		migrationsFolder = filepath.Join(wd, "../../migrations")
+	}
+
+	trimProtocol := strings.TrimPrefix(connectionString, "postgres://")
+
+	credentialsArr := strings.Split(trimProtocol, "@")
+	credentials := credentialsArr[0]
+
+	dbInfo := strings.Split(credentialsArr[1], "/")
+	dbName := dbInfo[1]
+
+	hostPort := strings.Split(dbInfo[0], ":")
+
+	host := hostPort[0]
+
+	port, err := strconv.Atoi(hostPort[1])
+	if err != nil {
 		return err
 	}
 
-	if err := db.AutoMigrate(&VerifyAccount{}); err != nil {
-		return err
-	}
+	runner := migrations.NewRunner(
+		host,
+		credentials,
+		dbName,
+		port,
+		migrationsFolder,
+	)
 
-	if err := db.AutoMigrate(&ForgetPassword{}); err != nil {
-		return err
-	}
-
-	return nil
+	return runner.Run([]string{})
 }

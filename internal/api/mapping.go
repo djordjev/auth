@@ -10,6 +10,7 @@ func signUpRequestToUser(req SignUpRequest) domain.User {
 		Username: req.Username,
 		Password: req.Password,
 		Role:     req.Role,
+		Payload:  req.Payload,
 	}
 }
 
@@ -19,6 +20,7 @@ func userToSignUpResponse(user domain.User) SignUpResponse {
 		Username: user.Username,
 		Email:    user.Email,
 		Role:     user.Role,
+		Payload:  user.Payload,
 	}
 }
 

@@ -4,11 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/djordjev/auth/internal/models"
 	"github.com/djordjev/auth/internal/utils"
 	"github.com/djordjev/auth/packages/server"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 func main() {
@@ -19,19 +16,25 @@ func main() {
 	}
 
 	// Auto migrate database
-	dbUrl := config.GetConnectionString()
-	db, err := gorm.Open(postgres.Open(dbUrl), &gorm.Config{})
-	if err != nil {
-		panic(err)
-	}
+	// dbUrl := config.GetConnectionString()
+	// pool, err := pgxpool.New(context.Background(), dbUrl)
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-	if err := models.AutoMigrate(db); err != nil {
-		panic(err)
-	}
+	// defer pool.Close()
+
+	// TODO: auto migrate
+	// if err := models.AutoMigrate(db); err != nil {
+	// 	panic(err)
+	// }
 
 	// Start up
 	r := http.NewServeMux()
 	server := server.NewServer(r, config)
+
+	defer server.Close()
+
 	server.Mount("/")
 
 	fmt.Printf("Running server on port %s\n", config.Port)

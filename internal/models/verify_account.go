@@ -3,67 +3,86 @@ package models
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/djordjev/auth/internal/domain"
-	"gorm.io/gorm"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type VerifyAccount struct {
-	ModelWithDeletes
-	UserID uint
-	User   User   `gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	Token  string `gorm:"unique,not null"`
+	ID        pgtype.Int8        `db:"id"`
+	CreatedAt pgtype.Timestamptz `db:"created_at"`
+	UserID    pgtype.Int8        `db:"user_id"`
+	Token     pgtype.Text        `db:"token"`
 }
 
 type repositoryVerifyAccount struct {
 	ctx context.Context
-	db  *gorm.DB
+	db  query
 }
 
-func (v *repositoryVerifyAccount) Create(token string, userId uint) (verification domain.VerifyAccount, err error) {
-	ver := VerifyAccount{
-		UserID: userId,
-		Token:  token,
-	}
+func (v *repositoryVerifyAccount) Create(token string, userId uint64) (verification domain.VerifyAccount, err error) {
+	row := v.db.QueryRow(
+		v.ctx,
+		"insert into verify_accounts (created_at, user_id, token) values ($1, $2, $3) returning id",
+		time.Now(), userId, token,
+	)
 
-	result := v.db.Create(&ver)
-	if result.Error != nil {
+	var id pgtype.Int8
+	err = row.Scan(&id)
+
+	if err != nil {
 		err = fmt.Errorf("model VerifyAccount -> unable to create verification token")
 		return
 	}
 
 	verification.Token = token
-	verification.ID = ver.ID
+	verification.ID = uint64(id.Int64)
 	verification.UserID = userId
 
 	return
 }
 
 func (v *repositoryVerifyAccount) Verify(token string) (verification domain.VerifyAccount, err error) {
-	verifyRequest := VerifyAccount{}
-
-	stored := v.db.Where("token = ?", token).First(&verifyRequest)
-	if stored.Error == gorm.ErrRecordNotFound {
-		err = fmt.Errorf("there's no verify request associated with token %s %w", token, stored.Error)
-		return
-	} else if stored.Error != nil {
-		err = fmt.Errorf("failed to find verify token %s %w", token, stored.Error)
-		return
-	}
-
-	result := v.db.Delete(&VerifyAccount{}, verifyRequest.ID)
-	if result.Error != nil {
-		err = fmt.Errorf("failed to delete verification request for user %d %w", verifyRequest.UserID, result.Error)
+	rows, err := v.db.Query(
+		v.ctx,
+		"select * from verify_accounts where token = $1",
+		token,
+	)
+	if err != nil {
+		err = fmt.Errorf("failed to query verify accounts %w", err)
 		return
 	}
 
-	verification.ID = verifyRequest.ID
+	verifyRequest, err := pgx.CollectOneRow(rows, pgx.RowToStructByName[VerifyAccount])
+
+	if err == pgx.ErrNoRows {
+		err = fmt.Errorf("there's no verify request associated with token %s %w", token, err)
+		return
+	} else if err != nil {
+		err = fmt.Errorf("failed to find verify token %s %w", token, err)
+		return
+	}
+
+	_, err = v.db.Exec(
+		v.ctx,
+		"delete from verify_accounts where token = $1",
+		token,
+	)
+
+	if err != nil {
+		err = fmt.Errorf("failed to delete verification request for user %d %w", verifyRequest.UserID.Int64, err)
+		return
+	}
+
+	verification.ID = uint64(verifyRequest.ID.Int64)
 	verification.Token = token
-	verification.UserID = verifyRequest.UserID
+	verification.UserID = uint64(verifyRequest.UserID.Int64)
 
 	return
 }
 
-func newRepositoryVerifyAccount(ctx context.Context, db *gorm.DB) *repositoryVerifyAccount {
+func newRepositoryVerifyAccount(ctx context.Context, db query) *repositoryVerifyAccount {
 	return &repositoryVerifyAccount{ctx: ctx, db: db}
 }

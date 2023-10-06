@@ -13,14 +13,14 @@ func TestVerifyAccountCreate(t *testing.T) {
 	existingUser := newRandomUser()
 	token, _ := uuid.NewUUID()
 
-	res := dbConnection.Create(&existingUser)
-	require.Nil(t, res.Error, "failed to initialize db state")
+	existingUser, err := storeUser(existingUser)
+	require.Nil(t, err, "failed to initialize db state")
 
 	repo := newRepositoryVerifyAccount(context.TODO(), dbConnection)
 
 	type testCase struct {
 		name   string
-		userId uint
+		userId uint64
 		result domain.VerifyAccount
 	}
 
@@ -51,12 +51,15 @@ func TestVerifyAccountVerify(t *testing.T) {
 	existingUser := newRandomUser()
 	token, _ := uuid.NewUUID()
 
-	res := dbConnection.Create(&existingUser)
-	require.Nil(t, res.Error, "failed to initialize db state")
+	existingUser, err := storeUser(existingUser)
+	require.Nil(t, err, "failed to initialize db state")
 
-	verification := VerifyAccount{UserID: existingUser.ID, Token: token.String()}
-	res = dbConnection.Create(&verification)
-	require.Nil(t, res.Error, "failed to initialize db state")
+	_, err = dbConnection.Exec(
+		context.Background(),
+		"insert into verify_accounts (user_id, token) values ($1, $2)",
+		existingUser.ID, token.String(),
+	)
+	require.Nil(t, err, "failed to initialize db state")
 
 	repo := newRepositoryVerifyAccount(context.TODO(), dbConnection)
 

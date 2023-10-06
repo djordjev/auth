@@ -1,13 +1,13 @@
 package models
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"testing"
 	"time"
 
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 const (
@@ -17,7 +17,7 @@ const (
 	FailedToRunMigrations
 )
 
-var dbConnection *gorm.DB
+var dbConnection *pgxpool.Pool
 
 func getTestConnectionString() string {
 	envDBUrl := os.Getenv("TEST_DB_URL")
@@ -32,19 +32,18 @@ func getTestConnectionString() string {
 func TestMain(m *testing.M) {
 	var err error
 
-	count := 7
+	count := 10
 	dbUrl := getTestConnectionString()
-	fmt.Println("💿 Connecting to the database")
 
 	for i := 0; i < count; i++ {
-		dbConnection, err = gorm.Open(postgres.Open(dbUrl), &gorm.Config{SkipDefaultTransaction: true})
+		dbConnection, err = pgxpool.New(context.Background(), dbUrl)
 		if err != nil {
 			if i == count-1 {
 				os.Exit(FailedToConnect)
 			}
 
 			// failed to connect to db
-			waitTime := time.Duration(i+1) * 5 * time.Second
+			waitTime := time.Duration(5) * time.Second
 			fmt.Printf("♻️  Failed to connect to database %s, attempting again after %s seconds\n", dbUrl, waitTime)
 			time.Sleep(waitTime)
 		} else {
@@ -52,28 +51,17 @@ func TestMain(m *testing.M) {
 		}
 	}
 
-	cnn, _ := dbConnection.DB()
-	err = cnn.Ping()
-	if err != nil {
+	if err = dbConnection.Ping(context.Background()); err != nil {
 		fmt.Println("🛑 Failed to ping database")
 		os.Exit(FailedToPing)
 	}
 
-	fmt.Println("🎉🎉🎉 connected to database")
+	defer dbConnection.Close()
 
-	if err = AutoMigrate(dbConnection); err != nil {
+	if err = AutoMigrate(dbUrl); err != nil {
 		fmt.Println("🛑 Failed to run migrations")
 		os.Exit(FailedToRunMigrations)
 	}
-
-	defer func() {
-		err = cnn.Close()
-
-		if err != nil {
-			fmt.Println("🛑 Failed to close connection")
-			os.Exit(FailedToCloseConnection)
-		}
-	}()
 
 	res := m.Run()
 

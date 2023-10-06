@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var nonExistingUserID = uint(9223372036)
+var nonExistingUserID = uint64(9223372036)
 
 func newRandomUser() domain.User {
 	email := fmt.Sprintf("djordje.vukovic+%s@gmail.com", uuid.New())
@@ -28,8 +28,8 @@ func newRandomUser() domain.User {
 func TestGetByEmail(t *testing.T) {
 	existingUser := newRandomUser()
 
-	res := dbConnection.Create(&existingUser)
-	require.Nil(t, res.Error, "failed to initialize db state")
+	existingUser, err := storeUser(existingUser)
+	require.Nil(t, err, "failed to initialize db state")
 
 	repo := newRepositoryUser(context.TODO(), dbConnection)
 
@@ -71,8 +71,8 @@ func TestGetByEmail(t *testing.T) {
 func TestGetByUsername(t *testing.T) {
 	existingUser := newRandomUser()
 
-	res := dbConnection.Create(&existingUser)
-	require.Nil(t, res.Error, "failed to initialize db state")
+	existingUser, err := storeUser(existingUser)
+	require.Nil(t, err, "failed to initialize db state")
 
 	repo := newRepositoryUser(context.TODO(), dbConnection)
 
@@ -112,11 +112,10 @@ func TestGetByUsername(t *testing.T) {
 }
 
 func TestCreate(t *testing.T) {
-	existingUser := newRandomUser()
 	newUser := newRandomUser()
 
-	res := dbConnection.Create(&existingUser)
-	require.Nil(t, res.Error, "failed to initialize db state")
+	existingUser, err := storeUser(newRandomUser())
+	require.Nil(t, err, "failed to initialize db state")
 
 	repo := newRepositoryUser(context.TODO(), dbConnection)
 
@@ -161,16 +160,14 @@ func TestCreate(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	existingUser := newRandomUser()
-
-	res := dbConnection.Create(&existingUser)
-	require.Nil(t, res.Error, "failed to initialize db state")
+	existingUser, err := storeUser(newRandomUser())
+	require.Nil(t, err, "failed to initialize db state")
 
 	repo := newRepositoryUser(context.TODO(), dbConnection)
 
 	type testCase struct {
 		name        string
-		id          uint
+		id          uint64
 		result      bool
 		resultError string
 	}
@@ -206,10 +203,8 @@ func TestDelete(t *testing.T) {
 }
 
 func TestVerify(t *testing.T) {
-	existingUser := newRandomUser()
-
-	res := dbConnection.Create(&existingUser)
-	require.Nil(t, res.Error, "failed to initialize db state")
+	existingUser, err := storeUser(newRandomUser())
+	require.Nil(t, err, "failed to initialize db state")
 
 	repo := newRepositoryUser(context.TODO(), dbConnection)
 
@@ -252,10 +247,8 @@ func TestVerify(t *testing.T) {
 }
 
 func TestSetPassword(t *testing.T) {
-	existingUser := newRandomUser()
-
-	res := dbConnection.Create(&existingUser)
-	require.Nil(t, res.Error, "failed to initialize db state")
+	existingUser, err := storeUser(newRandomUser())
+	require.Nil(t, err, "failed to initialize db state")
 
 	repo := newRepositoryUser(context.TODO(), dbConnection)
 
